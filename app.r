@@ -1,21 +1,20 @@
 library(shiny)
 library(ggplot2)
 
+# Load Lake Data
+lakeData <- read.csv("Cleaned_LongPond_08082024.csv")
+
 # Define UI
 ui <- fluidPage(
-  titlePanel("Disolved Oxygen (DO) Levels From May to Early July"),
+  titlePanel("Placeholder Title"),
   sidebarLayout(
     sidebarPanel(
-      sliderInput("meter", 
-                  "Select Depth (Meters):", 
-                  min = 1, 
-                  max = 7, 
-                  value = 1, 
-                  step = 5,
-                  ticks = TRUE)
+      selectInput("graphSelect", "Select Graph:",
+                  choices = c("DO Plot", "Sensor Heatmap", "Heat Scatterplot")),
+      uiOutput("graphParameters")
     ),
     mainPanel(
-      plotOutput("sensorPlot")
+      plotOutput("selectedPlot")
     )
   )
 )
@@ -23,22 +22,57 @@ ui <- fluidPage(
 # Define server logic
 server <- function(input, output) {
 
-  filtered_data <- reactive({
-    df <- read.csv("Cleaned_LongPond_08082024.csv")
+  # Graph settings (sliders)
+  output$graphParameters <- renderUI({
+    if (input$graphSelect == "DO Plot") {
+      sliderInput("doDepth", 
+                  "Select Depth (Meters):", 
+                  min = 1, 
+                  max = 7, 
+                  value = 1, 
+                  step = 5)
+    } else if (input$graphSelect == "Sensor Heatmap") {
+      
+    } else if (input$graphSelect == "Heat Scatterplot") {
+      sliderInput("heatDepth", 
+                  "Select Depth (Meters):", 
+                  min = 1, 
+                  max = 7, 
+                  value = c(1, 7))
+    }
     
-    # Filter the data based on the selected meter
-    df_filtered <- df[df$sensor_type == "DO" & df$meter == input$meter, ]
-    
-    return(df_filtered)
   })
   
-  # Render the plot reactively
-  output$sensorPlot <- renderPlot({
-    ggplot(filtered_data(), aes(x = date, y = Value)) +
-      geom_point() +
-      labs(title = paste("DO Sensor at", input$meter, "Meters")) +
-      xlab("Date") + ylab("DO (mg/L)") +
-      theme_bw()
+  filteredData <- reactive({
+    if (input$graphSelect == "DO Plot") {
+      filtered <- lakeData[lakeData$sensor_type == "DO" & lakeData$meter == input$doDepth, ]
+    } else if (input$graphSelect == "Sensor Heatmap") {
+      
+    } else if (input$graphSelect == "Heat Scatterplot") {
+      filtered <- lakeData[lakeData$sensor_type == "Temperature" & 
+                             lakeData$meter == input$heatDepth, ]
+    }
+    
+    return(filtered)
+  })
+  
+  # Graphs
+  output$selectedPlot <- renderPlot({
+    if (input$graphSelect == "DO Plot") {
+      ggplot(filteredData(), aes(x = date, y = Value)) +
+        geom_point() +
+        labs(title = paste("DO Sensor at", input$meter, "Meters")) +
+        xlab("Date") + ylab("DO (mg/L)") +
+        theme_bw()
+    } else if (input$graphSelect == "Sensor Heatmap") {
+      
+    } else if (input$graphSelect == "Heat Scatterplot") {
+      ggplot(filteredData(), aes(x = date, y = Value)) +
+        geom_point() +
+        labs(title = paste("DO Sensor at", input$meter, "Meters")) +
+        xlab("Date") + ylab("Temperature (°C)") +
+        theme_bw()
+    }
   })
 }
 
