@@ -1,3 +1,5 @@
+#TODO: Add heatmap, continue cleaning up code, hard set y axis
+
 library(shiny)
 library(ggplot2)
 
@@ -9,8 +11,8 @@ ui <- fluidPage(
   titlePanel("Placeholder Title"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("graphSelect", "Select Graph:",
-                  choices = c("DO Plot", "Sensor Heatmap", "Heat Scatterplot")),
+      selectInput("graphSelect", "Select Graph",
+                  choices = c("DO Plot", "Heatmap", "Heat Scatterplot")),
       uiOutput("graphParameters")
     ),
     mainPanel(
@@ -22,52 +24,64 @@ ui <- fluidPage(
 # Define server logic
 server <- function(input, output) {
 
+  #Filter the data into sensor types
+  doData <- lakeData[lakeData$sensor_type == "DO", ]
+  heatData <- lakeData[lakeData$sensor_type == "Temperature", ]
+  
+  #Find all depths of the different sensors
+  doDepthChoices <- sort(unique(doData$meter), decreasing = FALSE)
+  heatDepthChoices <- sort(unique(heatData$meter), decreasing = FALSE)
+  
   # Graph settings (sliders)
   output$graphParameters <- renderUI({
     if (input$graphSelect == "DO Plot") {
-      sliderInput("doDepth", 
-                  "Select Depth (Meters):", 
-                  min = 1, 
-                  max = 7, 
-                  value = 1, 
-                  step = 5)
-    } else if (input$graphSelect == "Sensor Heatmap") {
+      checkboxGroupInput(
+        "doDepth",
+        "Select Depths (Meters)",
+        choices = doDepthChoices,
+        selected = min(doDepthChoices)
+      )
+    } else if (input$graphSelect == "Heatmap") {
       
     } else if (input$graphSelect == "Heat Scatterplot") {
-      sliderInput("heatDepth", 
-                  "Select Depth (Meters):", 
-                  min = 1, 
-                  max = 7, 
-                  value = c(1, 7))
+      checkboxGroupInput(
+        "heatDepth",
+        "Select Depths (Meters)",
+        choices = heatDepthChoices,
+        selected = min(heatDepthChoices)
+      )
     }
     
   })
   
-  filteredData <- reactive({
+  # Select data based on user input
+  selectedData <- reactive({
+    # DO data
     if (input$graphSelect == "DO Plot") {
-      filtered <- lakeData[lakeData$sensor_type == "DO" & lakeData$meter == input$doDepth, ]
-    } else if (input$graphSelect == "Sensor Heatmap") {
+      selected <- doData[doData$meter == input$doDepth, ]
+    # Heatmap data
+    } else if (input$graphSelect == "Heatmap") {
       
+    # Heat scatterplot data
     } else if (input$graphSelect == "Heat Scatterplot") {
-      filtered <- lakeData[lakeData$sensor_type == "Temperature" & 
-                             lakeData$meter == input$heatDepth, ]
+      selected <- heatData[heatData$meter == input$heatDepth, ]
     }
     
-    return(filtered)
+    return(selected)
   })
   
   # Graphs
   output$selectedPlot <- renderPlot({
     if (input$graphSelect == "DO Plot") {
-      ggplot(filteredData(), aes(x = date, y = Value)) +
+      ggplot(selectedData(), aes(x = date, y = Value)) +
         geom_point() +
         labs(title = paste("DO Sensor at", input$meter, "Meters")) +
         xlab("Date") + ylab("DO (mg/L)") +
         theme_bw()
-    } else if (input$graphSelect == "Sensor Heatmap") {
+    } else if (input$graphSelect == "Heatmap") {
       
     } else if (input$graphSelect == "Heat Scatterplot") {
-      ggplot(filteredData(), aes(x = date, y = Value)) +
+      ggplot(selectedData(), aes(x = date, y = Value)) +
         geom_point() +
         labs(title = paste("DO Sensor at", input$meter, "Meters")) +
         xlab("Date") + ylab("Temperature (°C)") +
