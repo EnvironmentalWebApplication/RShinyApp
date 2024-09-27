@@ -1,4 +1,4 @@
-#TODO: Add heatmap, continue cleaning up code, hard set y axis
+#TODO: Improve heatmap, continue cleaning up code, hard set y axis
 
 library(shiny)
 library(ggplot2)
@@ -61,7 +61,7 @@ server <- function(input, output) {
       selected <- doData[doData$meter == input$doDepth, ]
     # Heatmap data
     } else if (input$graphSelect == "Heatmap") {
-      
+      selected <- heatData
     # Heat scatterplot data
     } else if (input$graphSelect == "Heat Scatterplot") {
       selected <- heatData[heatData$meter == input$heatDepth, ]
@@ -79,7 +79,10 @@ server <- function(input, output) {
         xlab("Date") + ylab("DO (mg/L)") +
         theme_bw()
     } else if (input$graphSelect == "Heatmap") {
-      
+        ggplot(selectedData(), aes(x = date, y = meter, fill = Value)) +
+        geom_tile() +
+        xlab("Date") + ylab("Depth (m)") +
+        theme_bw()
     } else if (input$graphSelect == "Heat Scatterplot") {
       ggplot(selectedData(), aes(x = date, y = Value)) +
         geom_point() +
