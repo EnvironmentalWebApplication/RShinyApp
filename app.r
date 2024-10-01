@@ -1,4 +1,4 @@
-#TODO: Improve heatmap, continue cleaning up code, hard set y axis
+#TODO: Improve heatmap, continue cleaning up code, hard set y axis, fix date
 
 library(shiny)
 library(ggplot2)
