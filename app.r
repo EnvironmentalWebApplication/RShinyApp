@@ -2,6 +2,7 @@
 
 library(shiny)
 library(ggplot2)
+library(colorRamps)
 
 # Load Lake Data
 lakeData <- read.csv("Cleaned_LongPond_08082024.csv")
@@ -13,7 +14,8 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput("graphSelect", "Select Graph",
                   choices = c("DO Plot", "Heatmap", "Heat Scatterplot")),
-      uiOutput("graphParameters")
+      uiOutput("graphParameters"),
+      uiOutput("dateParameters")
     ),
     mainPanel(
       plotOutput("selectedPlot")
@@ -32,17 +34,21 @@ server <- function(input, output) {
   doDepthChoices <- sort(unique(doData$meter), decreasing = FALSE)
   heatDepthChoices <- sort(unique(heatData$meter), decreasing = FALSE)
   
-  # Graph settings (sliders)
+  #Get all the unique days
+  doData$date <- as.Date(doData$date, format = "%m/%d/%y %H:%M")
+  heatData$date <- as.Date(heatData$date, format = "%m/%d/%y %H:%M")
+  
+  # Graph settings (check boxes)
   output$graphParameters <- renderUI({
     if (input$graphSelect == "DO Plot") {
       checkboxGroupInput(
         "doDepth",
         "Select Depths (Meters)",
         choices = doDepthChoices,
-        selected = min(doDepthChoices)
+        selected = min(doDepthChoices),
       )
     } else if (input$graphSelect == "Heatmap") {
-      
+      # Space to add graph parameters to heatmap
     } else if (input$graphSelect == "Heat Scatterplot") {
       checkboxGroupInput(
         "heatDepth",
@@ -54,11 +60,33 @@ server <- function(input, output) {
     
   })
   
+  # Date settings (Calander)
+  output$dateParameters <- renderUI({
+    if (input$graphSelect == "DO Plot") {
+      dateRangeInput(
+        "doDates",
+        "Select Date Range",
+        start = min(doData$date),
+        end = max(doData$date),
+        format = "mm/dd/yyyy"
+      )
+    } else if (input$graphSelect == "Heatmap" || input$graphSelect == "Heat Scatterplot") {
+      dateRangeInput(
+        "heatDates",
+        "Select Date Range",
+        start = min(heatData$date),
+        end = max(heatData$date),
+        format = "mm/dd/yyyy"
+      )
+    }
+    
+  })
+  
   # Select data based on user input
   selectedData <- reactive({
     # DO data
     if (input$graphSelect == "DO Plot") {
-      selected <- doData[doData$meter == input$doDepth, ]
+      selected <- doData[doData$meter == input$doDepth & doData$date == input$doDates, ]
     # Heatmap data
     } else if (input$graphSelect == "Heatmap") {
       selected <- heatData
@@ -75,12 +103,13 @@ server <- function(input, output) {
     if (input$graphSelect == "DO Plot") {
       ggplot(selectedData(), aes(x = date, y = Value)) +
         geom_point() +
-        labs(title = paste("DO Sensor at", input$meter, "Meters")) +
+        labs(title = paste("DO Sensor at", input$doDepth, "Meters")) +
         xlab("Date") + ylab("DO (mg/L)") +
         theme_bw()
     } else if (input$graphSelect == "Heatmap") {
         ggplot(selectedData(), aes(x = date, y = meter, fill = Value)) +
         geom_tile() +
+        scale_fill_gradientn(colours=matlab.like(10), na.value = 'gray', name="Water\nTemperature \n(?C)", limits = c(0, 35), breaks=c(0,5,10,15,20,25,30,35))  +
         xlab("Date") + ylab("Depth (m)") +
         theme_bw()
     } else if (input$graphSelect == "Heat Scatterplot") {
