@@ -1,4 +1,4 @@
-#TODO: Improve heatmap, continue cleaning up code, hard set y axis, fix date
+#TODO: Improve heatmap, continue cleaning up code, hard set y axis
 
 library(shiny)
 library(ggplot2)
@@ -9,7 +9,7 @@ lakeData <- read.csv("Cleaned_LongPond_08082024.csv")
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("Placeholder Title"),
+  titlePanel("Placeholder"),
   sidebarLayout(
     sidebarPanel(
       selectInput("graphSelect", "Select Graph",
@@ -34,9 +34,9 @@ server <- function(input, output) {
   doDepthChoices <- sort(unique(doData$meter), decreasing = FALSE)
   heatDepthChoices <- sort(unique(heatData$meter), decreasing = FALSE)
   
-  #Get all the unique days
-  doData$date <- as.Date(doData$date, format = "%m/%d/%y %H:%M")
-  heatData$date <- as.Date(heatData$date, format = "%m/%d/%y %H:%M")
+  #Format days
+  doData$date <- as.Date(doData$date, format = "%m/%d/%y")
+  heatData$date <- as.Date(heatData$date, format = "%m/%d/%y")
   
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
@@ -68,31 +68,39 @@ server <- function(input, output) {
         "Select Date Range",
         start = min(doData$date),
         end = max(doData$date),
+        min = min(doData$date),
+        max = max(doData$date),
         format = "mm/dd/yyyy"
-      )
+        )
     } else if (input$graphSelect == "Heatmap" || input$graphSelect == "Heat Scatterplot") {
-      dateRangeInput(
-        "heatDates",
-        "Select Date Range",
-        start = min(heatData$date),
-        end = max(heatData$date),
-        format = "mm/dd/yyyy"
-      )
+        dateRangeInput(
+          "heatDates",
+          "Select Date Range",
+          start = min(heatData$date),
+          end = max(heatData$date),
+          min = min(heatData$date),
+          max = max(heatData$date),
+          format = "mm/dd/yyyy"
+          )
     }
-    
   })
   
   # Select data based on user input
   selectedData <- reactive({
     # DO data
     if (input$graphSelect == "DO Plot") {
-      selected <- doData[doData$meter == input$doDepth & doData$date == input$doDates, ]
+      selected <- doData[doData$meter == input$doDepth & 
+                           as.Date(doData$date) >= input$doDates[1] & 
+                           as.Date(doData$date) <= input$doDates[2], ]
     # Heatmap data
     } else if (input$graphSelect == "Heatmap") {
-      selected <- heatData
+      selected <- heatData[as.Date(heatData$date) >= input$heatDates[1] & 
+                             as.Date(heatData$date) <= input$heatDates[2], ]
     # Heat scatterplot data
     } else if (input$graphSelect == "Heat Scatterplot") {
-      selected <- heatData[heatData$meter == input$heatDepth, ]
+      selected <- heatData[heatData$meter == input$heatDepth &
+                             as.Date(heatData$date) >= input$heatDates[1] & 
+                             as.Date(heatData$date) <= input$heatDates[2], ]
     }
     
     return(selected)
@@ -107,11 +115,16 @@ server <- function(input, output) {
         xlab("Date") + ylab("DO (mg/L)") +
         theme_bw()
     } else if (input$graphSelect == "Heatmap") {
-        ggplot(selectedData(), aes(x = date, y = meter, fill = Value)) +
-        geom_tile() +
-        scale_fill_gradientn(colours=matlab.like(10), na.value = 'gray', name="Water\nTemperature \n(?C)", limits = c(0, 35), breaks=c(0,5,10,15,20,25,30,35))  +
-        xlab("Date") + ylab("Depth (m)") +
-        theme_bw()
+      ggplot(selectedData(), aes(x = date, y = meter, fill = Value)) +
+        geom_raster(interpolate = T) +
+        scale_y_continuous(trans = "reverse", 
+                           breaks = min(heatDepthChoices):max(heatDepthChoices)) + 
+        scale_fill_viridis_c() + 
+        scale_x_date(position = "top") +
+        labs(x = "", y = "Depth (m)", 
+             title = "Long Pond (Average) Sensor Temperature Plot (1m - 7m)", 
+             fill = "Temp (C)") + 
+        theme_classic()
     } else if (input$graphSelect == "Heat Scatterplot") {
       ggplot(selectedData(), aes(x = date, y = Value)) +
         geom_point() +
