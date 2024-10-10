@@ -5,7 +5,7 @@ library(ggplot2)
 library(colorRamps)
 
 # Load Lake Data
-lakeData <- read.csv("Cleaned_LongPond_08082024.csv")
+lakeData <- read.csv("./data/Cleaned_LongPond_08082024.csv")
 
 # Define UI
 ui <- fluidPage(
