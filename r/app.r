@@ -1,21 +1,19 @@
-#TODO: Improve heatmap, continue cleaning up code, hard set y axis, improve colors
-
 library(shiny)
 library(ggplot2)
 library(colorRamps)
 
 # Load Lake Data
-lakeData <- read.csv("./data/Cleaned_LongPond_08082024.csv")
+lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv")
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("Placeholder"),
-  
+  titlePanel(""),
+
   # Create a single tabsetPanel to hold multiple tabPanel elements
   tabsetPanel(
-    
+
     # First tab
-    tabPanel("Tab 1", 
+    tabPanel("Tab 1",
              sidebarLayout(
                sidebarPanel(
                  selectInput(
@@ -31,9 +29,9 @@ ui <- fluidPage(
                )
              )
     ),
-    
+
     # Second tab
-    tabPanel("Tab 2", 
+    tabPanel("Tab 2",
              sidebarLayout(
                sidebarPanel(
                  selectInput(
@@ -54,17 +52,17 @@ ui <- fluidPage(
 # Define server logic
 server <- function(input, output) {
   #Filter the data into sensor types
-  doData <- lakeData[lakeData$sensor_type == "DO", ]
-  heatData <- lakeData[lakeData$sensor_type == "Temperature", ]
-  
+  doData <- lakeData[lakeData$sensor_type == "DO",]
+  heatData <- lakeData[lakeData$sensor_type == "Temperature",]
+
   #Find all depths of the different sensors
   doDepthChoices <- sort(unique(doData$meter), decreasing = FALSE)
   heatDepthChoices <- sort(unique(heatData$meter), decreasing = FALSE)
-  
+
   #Format days
   doData$date <- as.Date(doData$date, format = "%m/%d/%y")
   heatData$date <- as.Date(heatData$date, format = "%m/%d/%y")
-  
+
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
     if (input$graphSelect == "DO Plot") {
@@ -84,9 +82,9 @@ server <- function(input, output) {
         selected = min(heatDepthChoices)
       )
     }
-    
+
   })
-  
+
   # Date settings (Calander)
   output$dateParameters <- renderUI({
     if (input$graphSelect == "DO Plot") {
@@ -100,7 +98,7 @@ server <- function(input, output) {
         format = "mm/dd/yyyy"
       )
     } else if (input$graphSelect == "Heatmap" ||
-               input$graphSelect == "Heat Scatterplot") {
+      input$graphSelect == "Heat Scatterplot") {
       dateRangeInput(
         "heatDates",
         "Select Date Range",
@@ -112,35 +110,40 @@ server <- function(input, output) {
       )
     }
   })
-  
+
   # Select data based on user input
   selectedData <- reactive({
     # DO data
     if (input$graphSelect == "DO Plot") {
       selected <- doData[doData$meter == input$doDepth &
                            as.Date(doData$date) >= input$doDates[1] &
-                           as.Date(doData$date) <= input$doDates[2], ]
+                           as.Date(doData$date) <= input$doDates[2],]
       # Heatmap data
     } else if (input$graphSelect == "Heatmap") {
       selected <- heatData[as.Date(heatData$date) >= input$heatDates[1] &
-                             as.Date(heatData$date) <= input$heatDates[2], ]
+                             as.Date(heatData$date) <= input$heatDates[2],]
       # Heat scatterplot data
     } else if (input$graphSelect == "Heat Scatterplot") {
       selected <- heatData[heatData$meter == input$heatDepth &
                              as.Date(heatData$date) >= input$heatDates[1] &
-                             as.Date(heatData$date) <= input$heatDates[2], ]
+                             as.Date(heatData$date) <= input$heatDates[2],]
     }
-    
+
     return(selected)
   })
-  
+
+  # Manual color setting for depths
+  depthColors <- c("1" = "#f87a71", "2" = "#c39b24", "3" = "#54b321", "4" = "#05be95",
+                   "5" = "#08b4e8", "6" = "#a68bfc", "7" = "#fb66d5")
+
   # Graphs
   output$selectedPlot <- renderPlot({
     if (input$graphSelect == "DO Plot") {
       ggplot(selectedData(), aes(x = date, y = Value, color = factor(meter))) +
         geom_point() +
-        labs(title = paste("DO Sensor at", input$doDepth, "Meters")) +
-        scale_y_continuous(limits = c(min(doData$Value), max(doData$Value))) +
+        scale_color_manual(values = depthColors) +
+        scale_y_continuous(breaks = seq(0, 15, by = 3),
+                           limits = c(0, 15)) +
         labs(
           x = "",
           y = "DO (mg/L)",
@@ -167,13 +170,14 @@ server <- function(input, output) {
     } else if (input$graphSelect == "Heat Scatterplot") {
       ggplot(selectedData(), aes(x = date, y = Value, color = factor(meter))) +
         geom_point() +
-        labs(title = paste("DO Sensor at", input$meter, "Meters")) +
+        scale_color_manual(values = depthColors) +
+        scale_y_continuous(breaks = seq(0, 30, by = 5),
+                           limits = c(0, 30)) +
         labs(
           x = "",
           y = "Temperature (°C)",
           color = "Meter"
         ) +
-        scale_y_continuous(limits = c(min(heatData$Value), max(heatData$Value))) +
         theme_bw()
     }
   })
