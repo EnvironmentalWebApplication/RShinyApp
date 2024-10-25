@@ -158,15 +158,16 @@ server <- function(input, output) {
           trans = "reverse",
           breaks = min(heatDepthChoices):max(heatDepthChoices)
         ) +
-        scale_fill_viridis_c() +
+        scale_fill_viridis_c(limits = c(5, 30), breaks = seq(5, 30, by = 5)) +
         scale_x_date(position = "top") +
         labs(
           x = "",
           y = "Depth (m)",
           title = "Long Pond (Average) Sensor Temperature Plot (1m - 7m)",
-          fill = "Temp (C)"
+          fill = "Temp (°C)"
         ) +
         theme_classic()
+
     } else if (input$graphSelect == "Heat Scatterplot") {
       ggplot(selectedData(), aes(x = date, y = Value, color = factor(meter))) +
         geom_point() +
