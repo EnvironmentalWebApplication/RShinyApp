@@ -19,7 +19,7 @@ ui <- fluidPage(
                  selectInput(
                    "graphSelect",
                    "Select Graph",
-                   choices = c("DO Plot", "Heatmap", "Heat Scatterplot")
+                   choices = c("Heatmap", "DO at Depth", "Temperature at Depth")
                  ),
                  uiOutput("graphParameters"),
                  uiOutput("dateParameters")
@@ -65,16 +65,17 @@ server <- function(input, output) {
 
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
-    if (input$graphSelect == "DO Plot") {
-      checkboxGroupInput(
+      if (input$graphSelect == "Heatmap") {
+      # Space to add graph parameters to heatmap
+      }
+      else if (input$graphSelect == "DO at Depth") {
+        checkboxGroupInput(
         "doDepth",
         "Select Depths (Meters)",
         choices = doDepthChoices,
         selected = min(doDepthChoices),
-      )
-    } else if (input$graphSelect == "Heatmap") {
-      # Space to add graph parameters to heatmap
-    } else if (input$graphSelect == "Heat Scatterplot") {
+        )
+      } else if (input$graphSelect == "Temperature at Depth") {
       checkboxGroupInput(
         "heatDepth",
         "Select Depths (Meters)",
@@ -87,7 +88,7 @@ server <- function(input, output) {
 
   # Date settings (Calander)
   output$dateParameters <- renderUI({
-    if (input$graphSelect == "DO Plot") {
+    if (input$graphSelect == "DO at Depth") {
       dateRangeInput(
         "doDates",
         "Select Date Range",
@@ -98,7 +99,7 @@ server <- function(input, output) {
         format = "mm/dd/yyyy"
       )
     } else if (input$graphSelect == "Heatmap" ||
-      input$graphSelect == "Heat Scatterplot") {
+      input$graphSelect == "Temperature at Depth") {
       dateRangeInput(
         "heatDates",
         "Select Date Range",
@@ -114,16 +115,16 @@ server <- function(input, output) {
   # Select data based on user input
   selectedData <- reactive({
     # DO data
-    if (input$graphSelect == "DO Plot") {
+    if (input$graphSelect == "Heatmap") {
+      selected <- heatData[as.Date(heatData$date) >= input$heatDates[1] &
+                             as.Date(heatData$date) <= input$heatDates[2],]
+      # Heatmap data
+    } else if (input$graphSelect == "DO at Depth") {
       selected <- doData[doData$meter == input$doDepth &
                            as.Date(doData$date) >= input$doDates[1] &
                            as.Date(doData$date) <= input$doDates[2],]
-      # Heatmap data
-    } else if (input$graphSelect == "Heatmap") {
-      selected <- heatData[as.Date(heatData$date) >= input$heatDates[1] &
-                             as.Date(heatData$date) <= input$heatDates[2],]
       # Heat scatterplot data
-    } else if (input$graphSelect == "Heat Scatterplot") {
+    } else if (input$graphSelect == "Temperature at Depth") {
       selected <- heatData[heatData$meter == input$heatDepth &
                              as.Date(heatData$date) >= input$heatDates[1] &
                              as.Date(heatData$date) <= input$heatDates[2],]
@@ -138,20 +139,7 @@ server <- function(input, output) {
 
   # Graphs
   output$selectedPlot <- renderPlot({
-    if (input$graphSelect == "DO Plot") {
-      ggplot(selectedData(), aes(x = date, y = Value, color = factor(meter))) +
-        geom_point() +
-        scale_color_manual(values = depthColors) +
-        scale_y_continuous(breaks = seq(0, 15, by = 3),
-                           limits = c(0, 15)) +
-        labs(
-          x = "",
-          y = "DO (mg/L)",
-          color = "Meter"
-        ) +
-        theme_bw()
-
-    } else if (input$graphSelect == "Heatmap") {
+    if (input$graphSelect == "Heatmap") {
       ggplot(selectedData(), aes(x = date, y = meter, fill = Value)) +
         geom_raster(interpolate = T) +
         scale_y_continuous(
@@ -163,12 +151,22 @@ server <- function(input, output) {
         labs(
           x = "",
           y = "Depth (m)",
-          title = "Long Pond (Average) Sensor Temperature Plot (1m - 7m)",
           fill = "Temp (°C)"
         ) +
         theme_classic()
-
-    } else if (input$graphSelect == "Heat Scatterplot") {
+    } else if (input$graphSelect == "DO at Depth") {
+      ggplot(selectedData(), aes(x = date, y = Value, color = factor(meter))) +
+        geom_point() +
+        scale_color_manual(values = depthColors) +
+        scale_y_continuous(breaks = seq(0, 15, by = 3),
+                           limits = c(0, 15)) +
+        labs(
+          x = "",
+          y = "DO (mg/L)",
+          color = "Meter"
+        ) +
+        theme_bw()
+    } else if (input$graphSelect == "Temperature at Depth") {
       ggplot(selectedData(), aes(x = date, y = Value, color = factor(meter))) +
         geom_point() +
         scale_color_manual(values = depthColors) +
