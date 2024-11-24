@@ -71,8 +71,8 @@ server <- function(input, output) {
   #Format days
   DailyDO$date <- as.Date(DailyDO$date)
   DailyHeat$date <- as.Date(DailyHeat$date)
-  subDailyDO$date <- as.Date(subDailyDO$date)
-  subDailyHeat$date <- as.Date(subDailyHeat$date)
+  subDailyDO$date <- as.POSIXct(subDailyDO$date, format = "%Y-%m-%d %H:%M:%S")
+  subDailyHeat$date <- as.POSIXct(subDailyHeat$date, format = "%Y-%m-%d %H:%M:%S")
 
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
