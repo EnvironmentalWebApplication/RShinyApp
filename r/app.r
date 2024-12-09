@@ -91,7 +91,7 @@ server <- function(input, output) {
           "doDepth",
           "Select Depths (Meters)",
           choices = doDepthChoices,
-          selected = min(doDepthChoices),
+          selected = c("1.52", "2.52", "3.52", "4.52", "5.52", "6.52", "7.52")
         )
       )
     } else if (input$graphSelect == "Temperature at Depth") {
@@ -106,7 +106,7 @@ server <- function(input, output) {
           "heatDepth",
           "Select Depths (Meters)",
           choices = heatDepthChoices,
-          selected = min(heatDepthChoices)
+          selected = c("1.52", "2.52", "3.52", "4.52", "5.52", "6.52", "7.52")
         )
       )
     }
