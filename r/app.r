@@ -19,14 +19,14 @@ ui <- fluidPage(
   tabsetPanel(
 
     # First tab
-    tabPanel("Tab 1",
+    tabPanel("High-Frequency Data",
              sidebarLayout(
                sidebarPanel(
                  selectInput(
                    "graphSelect",
                    "Select Graph",
                    choices = c("Heatmap", "DO at Depth", "Temperature at Depth"),
-                   selected = "DO at Depth"
+                   selected = "Temperature at Depth"
                  ),
                  uiOutput("graphParameters"),
                  uiOutput("dateParameters")
@@ -38,7 +38,7 @@ ui <- fluidPage(
     ),
 
     # Second tab
-    tabPanel("Tab 2",
+    tabPanel("Manual Sampling",
              sidebarLayout(
                sidebarPanel(
                  selectInput(
@@ -77,7 +77,7 @@ server <- function(input, output) {
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
     if (input$graphSelect == "Heatmap") {
-      # Space to add graph parameters to heatmap
+      # Placeholder to add graph parameters to heatmap
     }
     else if (input$graphSelect == "DO at Depth") {
       tagList(
@@ -149,8 +149,8 @@ server <- function(input, output) {
     else if (input$graphSelect == "DO at Depth") {
       if (input$frequencyDO == "Daily Average") {
         selected <- DailyDO[DailyDO$meter %in% input$doDepth &
-                              as.Date(DailyDO$date) >= input$doDates[1] &
-                              as.Date(DailyDO$date) <= input$doDates[2],]
+                              DailyDO$date >= input$doDates[1] &
+                              DailyDO$date <= input$doDates[2],]
       }
       else if (input$frequencyDO == "Sub Daily") {
         selected <- subDailyDO[subDailyDO$meter %in% input$doDepth &
@@ -162,8 +162,8 @@ server <- function(input, output) {
     else if (input$graphSelect == "Temperature at Depth") {
       if (input$frequencyHeat == "Daily Average") {
         selected <- DailyHeat[DailyHeat$meter %in% input$heatDepth &
-                                as.Date(DailyHeat$date) >= input$heatDates[1] &
-                                as.Date(DailyHeat$date) <= input$heatDates[2],]
+                                DailyHeat$date >= input$heatDates[1] &
+                                DailyHeat$date <= input$heatDates[2],]
       }
       else if (input$frequencyHeat == "Sub Daily") {
         selected <- subDailyHeat[subDailyHeat$meter %in% input$heatDepth &
@@ -175,10 +175,19 @@ server <- function(input, output) {
     return(selected)
   })
 
-  # Manual color setting for depths
+  # Manual color settings for depths
   depthColors <- c("1.52" = "#f87a71", "2.52" = "#c39b24", "3.52" = "#54b321", "4.52" = "#05be95",
                    "5.52" = "#08b4e8", "6.52" = "#a68bfc", "7.52" = "#fb66d5")
 
+  # Manual shape settings for depths
+  depthShapes <- c("1.52" = 21,  # Circle
+                   "2.52" = 22,  # Square
+                   "3.52" = 23,  # Diamond
+                   "4.52" = 24,  # Triangle point-up
+                   "5.52" = 4,   # X letter
+                   "6.52" = 3,   # + sign
+                   "7.52" = 25)  # Triangle point-down
+  
   # Graphs
   output$selectedPlot <- renderPlot({
     if (input$graphSelect == "Heatmap") {
@@ -197,11 +206,13 @@ server <- function(input, output) {
         ) +
         theme_classic()
     } else if (input$graphSelect == "DO at Depth") {
-      ggplot(selectedData(), aes(x = date, y = value, color = factor(meter))) +
-        geom_point() +
+      ggplot(selectedData(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
+        geom_point(size = 2) +
         scale_color_manual(values = depthColors) +
+        scale_shape_manual(values = depthShapes) +
         scale_y_continuous(breaks = seq(0, 15, by = 3),
                            limits = c(0, 15)) +
+        guides(color = guide_legend("Meter"), shape = guide_legend("Meter")) +
         labs(
           x = "",
           y = "DO (mg/L)",
@@ -209,11 +220,13 @@ server <- function(input, output) {
         ) +
         theme_bw()
     } else if (input$graphSelect == "Temperature at Depth") {
-      ggplot(selectedData(), aes(x = date, y = value, color = factor(meter))) +
-        geom_point() +
+      ggplot(selectedData(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
+        geom_point(size = 2) +
         scale_color_manual(values = depthColors) +
+        scale_shape_manual(values = depthShapes) +
         scale_y_continuous(breaks = seq(0, 30, by = 5),
                            limits = c(0, 30)) +
+        guides(color = guide_legend("Meter"), shape = guide_legend("Meter")) +
         labs(
           x = "",
           y = "Temperature (°C)",
