@@ -18,7 +18,7 @@ ui <- fluidPage(
   # Create a single tabsetPanel to hold multiple tabPanel elements
   tabsetPanel(
 
-    # First tab
+    # High-frequency data tab
     tabPanel("High-Frequency Data",
              sidebarLayout(
                sidebarPanel(
@@ -37,21 +37,23 @@ ui <- fluidPage(
              )
     ),
 
-    # Second tab
+    # Manual sampling tab
     tabPanel("Manual Sampling",
              sidebarLayout(
                sidebarPanel(
                  selectInput(
-                   "test",
-                   "Select Test Graph",
-                   choices = c("Test1", "Test2")
+                   "msTab",
+                   "Select Graph",
+                   choices = c("YSI", "Water Quality"),
+                   selected = "YSI"
                  )
                ),
                mainPanel(
                  plotOutput("testPlot")
                )
              )
-    )
+    ),
+    selected = "Manual Sampling"
   )
 )
 
