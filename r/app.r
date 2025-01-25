@@ -6,10 +6,13 @@ library(colorRamps)
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
 dailyLakeData <- read.table("./r/data/DailyAverage.txt", header = TRUE, sep = "\t")
 subDailyLakeData <- read.table("./r/data/SubDailyAverage.txt", header = TRUE, sep = "\t")
+YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
+WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
 
-# Standardize column names
+# Standardize column names for high frequency data
 colnames(dailyLakeData) <- c("sensorType", "meter", "date", "value", "STD", "var", "n")
 colnames(subDailyLakeData) <- c("date", "value", "meter", "sensorType")
+colnames(WQ) <- c("date", "site", "tot_phos", "tot_nit", "ammonium", "react_phos", "chlor_a", "iron")
 
 # Define UI
 ui <- fluidPage(
@@ -32,7 +35,7 @@ ui <- fluidPage(
                  uiOutput("dateParameters")
                ),
                mainPanel(
-                 plotOutput("selectedPlot")
+                 plotOutput("HFPlot")
                )
              )
     ),
@@ -45,11 +48,12 @@ ui <- fluidPage(
                    "msTab",
                    "Select Graph",
                    choices = c("YSI", "Water Quality"),
-                   selected = "YSI"
-                 )
+                   selected = "Water Quality"
+                 ),
+                 uiOutput("manualSamplingParameters")
                ),
                mainPanel(
-                 plotOutput("testPlot")
+                 plotOutput("MSPlot")
                )
              )
     ),
@@ -140,14 +144,30 @@ server <- function(input, output) {
     }
   })
 
+  output$manualSamplingParameters <- renderUI({
+    if (input$msTab == "YSI") {
+      # YSI Placeholder parameters
+    }
+    else if (input$msTab == "Water Quality") {
+      selectInput(
+        "WQSelect",
+        "Select Water Quality Graphs",
+        choices = c("tot-phos", "tot_nit", "ammonium", "react_phos", "chlor_a", "iron"),
+        selected = "tot-phos"
+      )
+    }
+  })
+
   # Select data based on user input
-  selectedData <- reactive({
+  selectedHF <- reactive({
+    req(input$graphSelect)
+
     # DO data
     if (input$graphSelect == "Heatmap") {
       selected <- DailyHeat[as.Date(DailyHeat$date) >= input$heatDates[1] &
                               as.Date(DailyHeat$date) <= input$heatDates[2],]
     }
-    # Heatmap data
+      # Heatmap data
     else if (input$graphSelect == "DO at Depth") {
       if (input$frequencyDO == "Daily Average") {
         selected <- DailyDO[DailyDO$meter %in% input$doDepth &
@@ -156,11 +176,11 @@ server <- function(input, output) {
       }
       else if (input$frequencyDO == "Sub Daily") {
         selected <- subDailyDO[subDailyDO$meter %in% input$doDepth &
-                              as.Date(subDailyDO$date) >= input$doDates[1] &
-                              as.Date(subDailyDO$date) <= input$doDates[2],]
+                                 as.Date(subDailyDO$date) >= input$doDates[1] &
+                                 as.Date(subDailyDO$date) <= input$doDates[2],]
       }
     }
-    # Heat scatterplot data
+      # Heat scatterplot data
     else if (input$graphSelect == "Temperature at Depth") {
       if (input$frequencyHeat == "Daily Average") {
         selected <- DailyHeat[DailyHeat$meter %in% input$heatDepth &
@@ -169,9 +189,23 @@ server <- function(input, output) {
       }
       else if (input$frequencyHeat == "Sub Daily") {
         selected <- subDailyHeat[subDailyHeat$meter %in% input$heatDepth &
-                                as.Date(subDailyHeat$date) >= input$heatDates[1] &
-                                as.Date(subDailyHeat$date) <= input$heatDates[2],]
+                                   as.Date(subDailyHeat$date) >= input$heatDates[1] &
+                                   as.Date(subDailyHeat$date) <= input$heatDates[2],]
       }
+    }
+
+    return(selected)
+  })
+
+  selectedMS <- reactive({
+    req(input$msTab)
+
+    if (input$msTab == "YSI") {
+      selected <- YSI
+    }
+
+    else if (input$msTab == "Water Quality") {
+      selected <- WQ
     }
 
     return(selected)
@@ -189,11 +223,23 @@ server <- function(input, output) {
                    "5.52" = 4,   # X letter
                    "6.52" = 3,   # + sign
                    "7.52" = 25)  # Triangle point-down
-  
+
+  # MS Plots
+  output$MSPlots <- renderUI({
+    if (input$msTab == "YSI") {
+      plotOutput("MSPlot")
+    } else if (input$msTab == "Water Quality") {
+      fluidRow(
+        column(6, plotOutput("WQPlot1")),  # Left graph
+        column(6, plotOutput("WQPlot2"))   # Right graph
+      )
+    }
+  })
+
   # Graphs
-  output$selectedPlot <- renderPlot({
+  output$HFPlot <- renderPlot({
     if (input$graphSelect == "Heatmap") {
-      ggplot(selectedData(), aes(x = date, y = meter, fill = value)) +
+      ggplot(selectedHF(), aes(x = date, y = meter, fill = value)) +
         geom_raster(interpolate = T) +
         scale_y_continuous(
           trans = "reverse",
@@ -208,7 +254,7 @@ server <- function(input, output) {
         ) +
         theme_classic()
     } else if (input$graphSelect == "DO at Depth") {
-      ggplot(selectedData(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
+      ggplot(selectedHF(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
         geom_point(size = 2) +
         scale_color_manual(values = depthColors) +
         scale_shape_manual(values = depthShapes) +
@@ -222,7 +268,7 @@ server <- function(input, output) {
         ) +
         theme_bw()
     } else if (input$graphSelect == "Temperature at Depth") {
-      ggplot(selectedData(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
+      ggplot(selectedHF(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
         geom_point(size = 2) +
         scale_color_manual(values = depthColors) +
         scale_shape_manual(values = depthShapes) +
@@ -236,6 +282,67 @@ server <- function(input, output) {
         ) +
         theme_bw()
     }
+  })
+
+  #MS Plots
+  output$MSPlot <- renderPlot({
+    if (input$msTab == "YSI") {
+      ggplot(selectedMS(), aes(x = temp, y = meter, group = date, color = date)) +
+        geom_path(size = 1) +
+        geom_point(size = 3) +
+        scale_color_viridis_d() +
+        scale_y_reverse() +
+        labs(
+          x = "Temperature Measurement (°C)",
+          y = "Depth (m)",
+          color = "Date"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10)
+        )
+    }
+  })
+
+  # Water Quality Graph 1
+  output$WQPlot1 <- renderPlot({
+    ggplot(selectedMS(), aes(x = date, y = tot_phos, color = site, shape = site)) +
+      geom_point(size = 4) +
+      scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+      scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+      labs(
+        x = "",
+        y = "Total Phosphorus (µg/L)",
+        color = "",
+        shape = ""
+      ) +
+      theme_bw() +
+      theme(
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "top"
+      )
+  })
+
+  # Water Quality Graph 2
+  output$WQPlot2 <- renderPlot({
+    ggplot(selectedMS(), aes(x = date, y = tot_phos, color = site, shape = site)) +
+      geom_point(size = 4) +
+      scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+      scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+      labs(
+        x = "",
+        y = "Total Phosphorus (µg/L)",
+        color = "",
+        shape = ""
+      ) +
+      theme_bw() +
+      theme(
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "top"
+      )
   })
 }
 
