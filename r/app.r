@@ -10,10 +10,11 @@ YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
 WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
 
 # Standardize column names for high frequency data
-colnames(dailyLakeData) <- c("sensorType", "meter", "date", "value", "STD", "var", "n")
+colnames(dailyLakeData) <- c("sensorType", "meter", "date",
+                             "value", "STD", "var", "n")
 colnames(subDailyLakeData) <- c("date", "value", "meter", "sensorType")
-colnames(WQ) <- c("date", "site", "tot_phos", "tot_nit", "ammonium", "react_phos", "chlor_a", "iron")
-
+colnames(WQ) <- c("date", "site", "Total Phosphorus", "Total Nitrogen",
+                  "Ammonium", "Soluble Reactive Phosphorus", "Chlorophyll A", "Iron")
 # Define UI
 ui <- fluidPage(
   titlePanel(""),
@@ -53,8 +54,18 @@ ui <- fluidPage(
                  uiOutput("manualSamplingParameters")
                ),
                mainPanel(
-                 plotOutput("MSPlot")
-               )
+                 conditionalPanel(
+                   condition = "input.msTab == 'YSI'",
+                   plotOutput("MSPlot")
+                 ),
+                 conditionalPanel(
+                   condition = "input.msTab == 'Water Quality'",
+                   splitLayout(
+                     plotOutput('WQPlotLeft'),
+                     plotOutput('WQPlotRight')
+                   )
+                 )
+               ),
              )
     ),
     selected = "Manual Sampling"
@@ -63,7 +74,7 @@ ui <- fluidPage(
 
 
 # Define server logic
-server <- function(input, output) {
+server <- function(input, output, session) {
   #Filter the data into sensor types
   DailyDO <- dailyLakeData[dailyLakeData$sensorType == "DO",]
   DailyHeat <- dailyLakeData[dailyLakeData$sensorType == "Temp",]
@@ -144,19 +155,45 @@ server <- function(input, output) {
     }
   })
 
+  # Water quality graph choices
+  WQChoices <- c("Total Phosphorus", "Total Nitrogen", "Iron",
+                 "Dissolved Organic Carbon", "Soluble Reactive Phosphorus",
+                 "Secchi Depth", "Ammonium", "Chlorophyll A")
+
   output$manualSamplingParameters <- renderUI({
     if (input$msTab == "YSI") {
       # YSI Placeholder parameters
     }
     else if (input$msTab == "Water Quality") {
-      selectInput(
-        "WQSelect",
-        "Select Water Quality Graphs",
-        choices = c("tot-phos", "tot_nit", "ammonium", "react_phos", "chlor_a", "iron"),
-        selected = "tot-phos"
+      tagList(
+        selectInput(
+          "RightWQSelect",
+          "Select Right Graph",
+          # choices = WQChoices,
+          # selected = WQChoices[1]
+          choices = WQChoices,
+          selected = WQChoices[1]
+        ),
+        selectInput(
+          "LeftWQSelect",
+          "Select Left Graph",
+          # choices = WQChoices[-1],
+          # selected = WQChoices[2]
+          choices = WQChoices,
+          selected = WQChoices[2]
+        )
       )
     }
   })
+
+  # #TODO: Bug where changes an input doesn't affect the graphs
+  # observeEvent(input$LeftWQSelect, {
+  #   updateSelectInput(session, "RightWQSelect", choices = setdiff(WQChoices, input$LeftWQSelect))
+  # })
+  #
+  # observeEvent(input$RightWQSelect, {
+  #   updateSelectInput(session, "LeftWQSelect", choices = setdiff(WQChoices, input$RightWQSelect))
+  # })
 
   # Select data based on user input
   selectedHF <- reactive({
@@ -223,18 +260,6 @@ server <- function(input, output) {
                    "5.52" = 4,   # X letter
                    "6.52" = 3,   # + sign
                    "7.52" = 25)  # Triangle point-down
-
-  # MS Plots
-  output$MSPlots <- renderUI({
-    if (input$msTab == "YSI") {
-      plotOutput("MSPlot")
-    } else if (input$msTab == "Water Quality") {
-      fluidRow(
-        column(6, plotOutput("WQPlot1")),  # Left graph
-        column(6, plotOutput("WQPlot2"))   # Right graph
-      )
-    }
-  })
 
   # Graphs
   output$HFPlot <- renderPlot({
@@ -306,14 +331,14 @@ server <- function(input, output) {
   })
 
   # Water Quality Graph 1
-  output$WQPlot1 <- renderPlot({
-    ggplot(selectedMS(), aes(x = date, y = tot_phos, color = site, shape = site)) +
+  output$WQPlotLeft <- renderPlot({
+    ggplot(selectedMS(), aes(x = date, y = .data[[input$LeftWQSelect]], color = site, shape = site)) +
       geom_point(size = 4) +
       scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
       scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
       labs(
         x = "",
-        y = "Total Phosphorus (µg/L)",
+        # y = "Total Phosphorus (µg/L)",
         color = "",
         shape = ""
       ) +
@@ -326,14 +351,14 @@ server <- function(input, output) {
   })
 
   # Water Quality Graph 2
-  output$WQPlot2 <- renderPlot({
-    ggplot(selectedMS(), aes(x = date, y = tot_phos, color = site, shape = site)) +
+  output$WQPlotRight <- renderPlot({
+    ggplot(selectedMS(), aes(x = date, y = .data[[input$RightWQSelect]], color = site, shape = site)) +
       geom_point(size = 4) +
       scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
       scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
       labs(
         x = "",
-        y = "Total Phosphorus (µg/L)",
+        # y = "Total Nitrogen (label)",
         color = "",
         shape = ""
       ) +
