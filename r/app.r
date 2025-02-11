@@ -162,11 +162,19 @@ server <- function(input, output, session) {
 
   output$manualSamplingParameters <- renderUI({
     if (input$msTab == "YSI") {
-      selectInput(
-        "YSIGraphSelect",
-        "Select graph",
-        choices = c("Temperature", "DO", "Both"),
-        selected = "Temperature"
+      tagList(
+        selectInput(
+          "YSIGraphSelect",
+          "Select graph",
+          choices = c("Temperature", "DO", "Both"),
+          selected = "Temperature"
+        ),
+        checkboxGroupInput(
+          "YSIDateSelect",
+          "Select Date Range",
+          choices = unique(YSI$date),
+          selected = unique(YSI$date)
+        )
       )
     }
     else if (input$msTab == "Water Quality") {
@@ -243,7 +251,7 @@ server <- function(input, output, session) {
     req(input$msTab)
 
     if (input$msTab == "YSI") {
-      selected <- YSI
+      selected <- YSI[YSI$date %in% input$YSIDateSelect, ]
     }
 
     else if (input$msTab == "Water Quality") {
@@ -355,22 +363,22 @@ server <- function(input, output, session) {
   # Water Quality Graph 1
   output$msTabSplitLeft <- renderPlot({
     if (input$msTab == "Water Quality") {
-    ggplot(selectedMS(), aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
-      geom_point(size = 4) +
-      scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
-      scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
-      labs(
-        x = "",
-        # y = "Total Phosphorus (µg/L)",
-        color = "",
-        shape = ""
-      ) +
-      theme_bw() +
-      theme(
-        axis.title = element_text(size = 12),
-        axis.text = element_text(size = 10),
-        legend.position = "top"
-      )
+      ggplot(selectedMS(), aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
+        geom_point(size = 4) +
+        scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+        scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+        labs(
+          x = "",
+          # y = "Total Phosphorus (µg/L)",
+          color = "",
+          shape = ""
+        ) +
+        theme_bw() +
+        theme(
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10),
+          legend.position = "top"
+        )
     }
     else if (input$YSIGraphSelect == "Both") {
       ggplot(selectedMS(), aes(x = temp, y = meter, group = date, color = date)) +
@@ -395,21 +403,21 @@ server <- function(input, output, session) {
   output$msTabSplitRight <- renderPlot({
     if (input$msTab == "Water Quality") {
       ggplot(selectedMS(), aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
-      geom_point(size = 4) +
-      scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
-      scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
-      labs(
-        x = "",
-        # y = "Total Nitrogen (label)",
-        color = "",
-        shape = ""
-      ) +
-      theme_bw() +
-      theme(
-        axis.title = element_text(size = 12),
-        axis.text = element_text(size = 10),
-        legend.position = "top"
-      )
+        geom_point(size = 4) +
+        scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+        scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+        labs(
+          x = "",
+          # y = "Total Nitrogen (label)",
+          color = "",
+          shape = ""
+        ) +
+        theme_bw() +
+        theme(
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10),
+          legend.position = "top"
+        )
     }
     else if (input$YSIGraphSelect == "Both") {
       ggplot(selectedMS(), aes(x = do, y = meter, group = date, color = date)) +
