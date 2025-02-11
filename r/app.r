@@ -49,20 +49,20 @@ ui <- fluidPage(
                    "msTab",
                    "Select Graph",
                    choices = c("YSI", "Water Quality"),
-                   selected = "Water Quality"
+                   selected = "YSI"
                  ),
                  uiOutput("manualSamplingParameters")
                ),
                mainPanel(
                  conditionalPanel(
-                   condition = "input.msTab == 'YSI'",
+                   condition = "input.YSIGraphSelect == 'Temperature' || input.YSIGraphSelect == 'DO'",
                    plotOutput("MSPlot")
                  ),
                  conditionalPanel(
-                   condition = "input.msTab == 'Water Quality'",
+                   condition = "input.msTab == 'Water Quality' || input.YSIGraphSelect == 'Both'",
                    splitLayout(
-                     plotOutput('WQPlotLeft'),
-                     plotOutput('WQPlotRight')
+                     plotOutput('msTabSplitLeft'),
+                     plotOutput('msTabSplitRight')
                    )
                  )
                ),
@@ -162,12 +162,17 @@ server <- function(input, output, session) {
 
   output$manualSamplingParameters <- renderUI({
     if (input$msTab == "YSI") {
-      # YSI Placeholder parameters
+      selectInput(
+        "YSIGraphSelect",
+        "Select graph",
+        choices = c("Temperature", "DO", "Both"),
+        selected = "Temperature"
+      )
     }
     else if (input$msTab == "Water Quality") {
       tagList(
         selectInput(
-          "RightWQSelect",
+          "rightWQSelect",
           "Select Right Graph",
           # choices = WQChoices,
           # selected = WQChoices[1]
@@ -175,7 +180,7 @@ server <- function(input, output, session) {
           selected = WQChoices[1]
         ),
         selectInput(
-          "LeftWQSelect",
+          "leftWQSelect",
           "Select Left Graph",
           # choices = WQChoices[-1],
           # selected = WQChoices[2]
@@ -187,12 +192,12 @@ server <- function(input, output, session) {
   })
 
   # #TODO: Bug where changes an input doesn't affect the graphs
-  # observeEvent(input$LeftWQSelect, {
-  #   updateSelectInput(session, "RightWQSelect", choices = setdiff(WQChoices, input$LeftWQSelect))
+  # observeEvent(input$leftWQSelect, {
+  #   updateSelectInput(session, "rightWQSelect", choices = setdiff(WQChoices, input$leftWQSelect))
   # })
   #
-  # observeEvent(input$RightWQSelect, {
-  #   updateSelectInput(session, "LeftWQSelect", choices = setdiff(WQChoices, input$RightWQSelect))
+  # observeEvent(input$rightWQSelect, {
+  #   updateSelectInput(session, "leftWQSelect", choices = setdiff(WQChoices, input$rightWQSelect))
   # })
 
   # Select data based on user input
@@ -311,7 +316,63 @@ server <- function(input, output, session) {
 
   #MS Plots
   output$MSPlot <- renderPlot({
-    if (input$msTab == "YSI") {
+    if (input$YSIGraphSelect == "Temperature") {
+      ggplot(selectedMS(), aes(x = temp, y = meter, group = date, color = date)) +
+        geom_path(size = 1) +
+        geom_point(size = 3) +
+        scale_color_viridis_d() +
+        scale_y_reverse() +
+        labs(
+          x = "Temperature Measurement (°C)",
+          y = "Depth (m)",
+          color = "Date"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10)
+        )
+    }
+    else if (input$YSIGraphSelect == "DO") {
+      ggplot(selectedMS(), aes(x = do, y = meter, group = date, color = date)) +
+        geom_path(size = 1) +
+        geom_point(size = 3) +
+        scale_color_viridis_d() +
+        scale_y_reverse() +
+        labs(
+          x = "Dissolved Oxygen Measurement (mg/L)",
+          y = "Depth (m)",
+          color = "Date"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10)
+        )
+    }
+  })
+
+  # Water Quality Graph 1
+  output$msTabSplitLeft <- renderPlot({
+    if (input$msTab == "Water Quality") {
+    ggplot(selectedMS(), aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
+      geom_point(size = 4) +
+      scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+      scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+      labs(
+        x = "",
+        # y = "Total Phosphorus (µg/L)",
+        color = "",
+        shape = ""
+      ) +
+      theme_bw() +
+      theme(
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "top"
+      )
+    }
+    else if (input$YSIGraphSelect == "Both") {
       ggplot(selectedMS(), aes(x = temp, y = meter, group = date, color = date)) +
         geom_path(size = 1) +
         geom_point(size = 3) +
@@ -330,29 +391,10 @@ server <- function(input, output, session) {
     }
   })
 
-  # Water Quality Graph 1
-  output$WQPlotLeft <- renderPlot({
-    ggplot(selectedMS(), aes(x = date, y = .data[[input$LeftWQSelect]], color = site, shape = site)) +
-      geom_point(size = 4) +
-      scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
-      scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
-      labs(
-        x = "",
-        # y = "Total Phosphorus (µg/L)",
-        color = "",
-        shape = ""
-      ) +
-      theme_bw() +
-      theme(
-        axis.title = element_text(size = 12),
-        axis.text = element_text(size = 10),
-        legend.position = "top"
-      )
-  })
-
   # Water Quality Graph 2
-  output$WQPlotRight <- renderPlot({
-    ggplot(selectedMS(), aes(x = date, y = .data[[input$RightWQSelect]], color = site, shape = site)) +
+  output$msTabSplitRight <- renderPlot({
+    if (input$msTab == "Water Quality") {
+      ggplot(selectedMS(), aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
       geom_point(size = 4) +
       scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
       scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
@@ -368,6 +410,24 @@ server <- function(input, output, session) {
         axis.text = element_text(size = 10),
         legend.position = "top"
       )
+    }
+    else if (input$YSIGraphSelect == "Both") {
+      ggplot(selectedMS(), aes(x = do, y = meter, group = date, color = date)) +
+        geom_path(size = 1) +
+        geom_point(size = 3) +
+        scale_color_viridis_d() +
+        scale_y_reverse() +
+        labs(
+          x = "Dissolved Oxygen Measurement (mg/L)",
+          y = "Depth (m)",
+          color = "Date"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.title = element_text(size = 12),
+          axis.text = element_text(size = 10)
+        )
+    }
   })
 }
 
