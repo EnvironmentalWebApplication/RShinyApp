@@ -1,6 +1,8 @@
 library(shiny)
 library(ggplot2)
 library(colorRamps)
+library(dplyr)
+library(tidyr)
 
 # Load Lake Data
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
@@ -55,11 +57,11 @@ ui <- fluidPage(
                ),
                mainPanel(
                  conditionalPanel(
-                   condition = "input.YSIGraphSelect == 'Temperature' || input.YSIGraphSelect == 'DO'",
+                   condition = "input.msTab == 'YSI'",
                    plotOutput("MSPlot")
                  ),
                  conditionalPanel(
-                   condition = "input.msTab == 'Water Quality' || input.YSIGraphSelect == 'Both'",
+                   condition = "input.msTab == 'Water Quality'",
                    splitLayout(
                      plotOutput('msTabSplitLeft'),
                      plotOutput('msTabSplitRight')
@@ -251,7 +253,15 @@ server <- function(input, output, session) {
     req(input$msTab)
 
     if (input$msTab == "YSI") {
-      selected <- YSI[YSI$date %in% input$YSIDateSelect, ]
+      if (input$YSIGraphSelect != "Both") {
+        selected <- YSI[YSI$date %in% input$YSIDateSelect, ]
+      }
+      else {
+      selected <-
+        YSI %>%
+          filter(date %in% input$YSIDateSelect) %>%
+          pivot_longer(cols = c(temp, do), names_to = "Measurement", values_to = "Value")
+      }
     }
 
     else if (input$msTab == "Water Quality") {
@@ -358,6 +368,16 @@ server <- function(input, output, session) {
           axis.text = element_text(size = 10)
         )
     }
+    else if (input$YSIGraphSelect == "Both") {
+      ggplot(selectedMS(), aes(x = Value, y = meter, color = as.factor(date), group = interaction(date, Measurement))) +
+        geom_path() +
+        geom_point() +
+        scale_y_reverse() +
+        scale_color_viridis_d() +
+        facet_wrap(~Measurement, scales = "free_x", labeller = as_labeller(c(temp = "Temperature (°C)", do = "Dissolved Oxygen (mg/L)"))) +
+        theme_minimal() +
+        labs(x = "", y = "Depth (m)", color = "Date")
+    }
   })
 
   # Water Quality Graph 1
@@ -380,23 +400,6 @@ server <- function(input, output, session) {
           legend.position = "top"
         )
     }
-    else if (input$YSIGraphSelect == "Both") {
-      ggplot(selectedMS(), aes(x = temp, y = meter, group = date, color = date)) +
-        geom_path(size = 1) +
-        geom_point(size = 3) +
-        scale_color_viridis_d() +
-        scale_y_reverse() +
-        labs(
-          x = "Temperature Measurement (°C)",
-          y = "Depth (m)",
-          color = "Date"
-        ) +
-        theme_minimal() +
-        theme(
-          axis.title = element_text(size = 12),
-          axis.text = element_text(size = 10)
-        )
-    }
   })
 
   # Water Quality Graph 2
@@ -417,23 +420,6 @@ server <- function(input, output, session) {
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10),
           legend.position = "top"
-        )
-    }
-    else if (input$YSIGraphSelect == "Both") {
-      ggplot(selectedMS(), aes(x = do, y = meter, group = date, color = date)) +
-        geom_path(size = 1) +
-        geom_point(size = 3) +
-        scale_color_viridis_d() +
-        scale_y_reverse() +
-        labs(
-          x = "Dissolved Oxygen Measurement (mg/L)",
-          y = "Depth (m)",
-          color = "Date"
-        ) +
-        theme_minimal() +
-        theme(
-          axis.title = element_text(size = 12),
-          axis.text = element_text(size = 10)
         )
     }
   })
