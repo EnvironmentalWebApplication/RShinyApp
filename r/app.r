@@ -51,7 +51,7 @@ ui <- fluidPage(
                    "msTab",
                    "Select Graph",
                    choices = c("YSI", "Water Quality"),
-                   selected = "YSI"
+                   selected = "Water Quality"
                  ),
                  uiOutput("manualSamplingParameters")
                ),
@@ -397,7 +397,8 @@ server <- function(input, output, session) {
         theme(
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10),
-          legend.position = "top"
+          legend.position = "top",
+          axis.text.x = element_text(angle = 45, hjust = 1)
         )
     }
   })
@@ -419,7 +420,8 @@ server <- function(input, output, session) {
         theme(
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10),
-          legend.position = "top"
+          legend.position = "top",
+          axis.text.x = element_text(angle = 45, hjust = 1)
         )
     }
   })
