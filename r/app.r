@@ -4,6 +4,8 @@ library(colorRamps)
 library(dplyr)
 library(tidyr)
 
+#TODO: Change WQ y-axis & units, figure out legend, axis limits on dual YSI, load in new interpolated data for heatmap, add the rest of the WQ data
+
 # Load Lake Data
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
 dailyLakeData <- read.table("./r/data/DailyAverage.txt", header = TRUE, sep = "\t")
@@ -346,6 +348,8 @@ server <- function(input, output, session) {
           color = "Date"
         ) +
         theme_minimal() +
+        scale_x_continuous(breaks = seq(0, 30, by = 5),
+                           limits = c(0, 30)) +
         theme(
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10)
@@ -362,7 +366,10 @@ server <- function(input, output, session) {
           y = "Depth (m)",
           color = "Date"
         ) +
+
         theme_minimal() +
+        scale_x_continuous(breaks = seq(0, 15, by = 3),
+                           limits = c(0, 15)) +
         theme(
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10)
@@ -379,6 +386,8 @@ server <- function(input, output, session) {
         labs(x = "", y = "Depth (m)", color = "Date")
     }
   })
+
+  #TODO: Sechi units are meters
 
   # Water Quality Graph 1
   output$msTabSplitLeft <- renderPlot({
@@ -397,7 +406,7 @@ server <- function(input, output, session) {
         theme(
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10),
-          legend.position = "top",
+          legend.position = "none",
           axis.text.x = element_text(angle = 45, hjust = 1)
         )
     }
