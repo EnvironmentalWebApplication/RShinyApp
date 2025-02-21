@@ -10,6 +10,7 @@ library(tidyr)
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
 dailyLakeData <- read.table("./r/data/DailyAverage.txt", header = TRUE, sep = "\t")
 subDailyLakeData <- read.table("./r/data/SubDailyAverage.txt", header = TRUE, sep = "\t")
+interpolatedLakeData <- read.table("./r/data/interpolate.txt", header = TRUE, sep = "\t")
 YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
 WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
 
@@ -17,6 +18,8 @@ WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
 colnames(dailyLakeData) <- c("sensorType", "meter", "date",
                              "value", "STD", "var", "n")
 colnames(subDailyLakeData) <- c("date", "value", "meter", "sensorType")
+colnames(interpolatedLakeData) <- c("date", "meter", "dataSource", "temp", "do")
+colnames(YSI) <- c("date", "meter", "temp", "do")
 colnames(WQ) <- c("date", "site", "Total Phosphorus", "Total Nitrogen",
                   "Ammonium", "Soluble Reactive Phosphorus", "Chlorophyll A", "Iron")
 # Define UI
@@ -34,7 +37,7 @@ ui <- fluidPage(
                    "graphSelect",
                    "Select Graph",
                    choices = c("Heatmap", "DO at Depth", "Temperature at Depth"),
-                   selected = "Temperature at Depth"
+                   selected = "Heatmap"
                  ),
                  uiOutput("graphParameters"),
                  uiOutput("dateParameters")
@@ -72,7 +75,7 @@ ui <- fluidPage(
                ),
              )
     ),
-    selected = "Manual Sampling"
+    selected = "High-Frequency Data"
   )
 )
 
@@ -88,12 +91,15 @@ server <- function(input, output, session) {
   #Find all depths of the different sensors
   doDepthChoices <- sort(unique(DailyDO$meter), decreasing = FALSE)
   heatDepthChoices <- sort(unique(DailyHeat$meter), decreasing = FALSE)
+  interpolatedHeatDepthChoices <- sort(unique(interpolatedLakeData$meter), decreasing = FALSE)
 
   #Format days
   DailyDO$date <- as.Date(DailyDO$date)
   DailyHeat$date <- as.Date(DailyHeat$date)
   subDailyDO$date <- as.POSIXct(subDailyDO$date, format = "%Y-%m-%d %H:%M:%S")
   subDailyHeat$date <- as.POSIXct(subDailyHeat$date, format = "%Y-%m-%d %H:%M:%S")
+  # interpolatedLakeData$date <- as.Date(interpolatedLakeData$date)
+  interpolatedLakeData$date <- as.POSIXct(interpolatedLakeData$date, format = "%Y-%m-%d")
 
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
@@ -146,7 +152,7 @@ server <- function(input, output, session) {
         max = max(DailyDO$date),
         format = "mm/dd/yyyy"
       )
-    } else if (input$graphSelect == "Heatmap" || input$graphSelect == "Temperature at Depth") {
+    } else if (input$graphSelect == "Temperature at Depth") {
       dateRangeInput(
         "heatDates",
         "Select Date Range",
@@ -154,6 +160,16 @@ server <- function(input, output, session) {
         end = max(DailyHeat$date),
         min = min(DailyHeat$date),
         max = max(DailyHeat$date),
+        format = "mm/dd/yyyy"
+      )
+    } else if (input$graphSelect == "Heatmap") {
+      dateRangeInput(
+        "interpolatedHeatDates",
+        "Select Date Range",
+        start = min(interpolatedLakeData$date),
+        end = max(interpolatedLakeData$date),
+        min = min(interpolatedLakeData$date),
+        max = max(interpolatedLakeData$date),
         format = "mm/dd/yyyy"
       )
     }
@@ -218,8 +234,8 @@ server <- function(input, output, session) {
 
     # DO data
     if (input$graphSelect == "Heatmap") {
-      selected <- DailyHeat[as.Date(DailyHeat$date) >= input$heatDates[1] &
-                              as.Date(DailyHeat$date) <= input$heatDates[2],]
+      selected <- interpolatedLakeData[interpolatedLakeData$date >= input$interpolatedHeatDates[1] &
+                              interpolatedLakeData$date <= input$interpolatedHeatDates[2],]
     }
       # Heatmap data
     else if (input$graphSelect == "DO at Depth") {
@@ -289,13 +305,14 @@ server <- function(input, output, session) {
   # Graphs
   output$HFPlot <- renderPlot({
     if (input$graphSelect == "Heatmap") {
-      ggplot(selectedHF(), aes(x = date, y = meter, fill = value)) +
+      ggplot(selectedHF(), aes(x = date, y = meter, fill = temp)) +
         geom_raster(interpolate = T) +
         scale_y_continuous(
           trans = "reverse",
-          breaks = min(heatDepthChoices):max(heatDepthChoices)
+          # TODO: uncomment when heatmap bug is fixed
+          # breaks = min(interpolatedHeatDepthChoices):max(interpolatedHeatDepthChoices)
         ) +
-        scale_fill_viridis_c(limits = c(5, 30), breaks = seq(5, 30, by = 5)) +
+        # scale_fill_viridis_c(limits = c(5, 30), breaks = seq(5, 30, by = 5)) +
         scale_x_date(position = "top") +
         labs(
           x = "",
