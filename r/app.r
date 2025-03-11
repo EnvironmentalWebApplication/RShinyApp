@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO: Change WQ y-axis & units, add secchi depth
+#TODO: Change WQ y-axis & units
 #TODO: Wedneday meeting: ask about interpolated heat data, check dual YSI x-axis
 
 # Load Lake Data
@@ -27,7 +27,7 @@ colnames(YSI) <- c("date", "meter", "temp", "do")
 colnames(WQ) <- c("date", "site", "Total Phosphorus", "Total Nitrogen",
                   "Ammonium", "Soluble Reactive Phosphorus", "Chlorophyll A", "Iron")
 colnames(WQDOC) <- c("date", "lake", "site", "Dissolved Organic Carbon", "n_reps", "min DOC mgl", "max DOC mgl")
-colnames(WQSecchi) <- c("date", "Secchi Depth")
+colnames(WQSecchi) <- c("date", "secchi")
 
 # Define UI
 ui <- fluidPage(
@@ -414,89 +414,114 @@ server <- function(input, output, session) {
     }
   })
 
-  #TODO: Sechi units are meters
 
-  # Water Quality Graph 1
+  # Water Quality Graph 1 (Left)
   output$msTabSplitLeft <- renderPlot({
     if (input$msTab == "Water Quality") {
-      # Determine which dataset to use
-      data_to_plot <- if (input$leftWQSelect == "Dissolved Organic Carbon") {
-        WQDOC
+      # Special case for Secchi Depth
+      if (input$leftWQSelect == "Secchi Depth") {
+        ggplot(WQSecchi, aes(x = date, y = secchi)) +
+          geom_point(size = 4, color = "#1f908c") +
+          labs(
+            x = "",
+            y = "Secchi Depth (m)",
+            color = "",
+            shape = ""
+          ) +
+          theme_bw() +
+          scale_y_continuous(limits = c(0, 15)) +
+          theme(
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10),
+            axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "none"
+          )
+
       } else {
-        WQ
+        # Select correct dataset
+        data_to_plot <- if (input$leftWQSelect == "Dissolved Organic Carbon") {
+          WQDOC
+        } else {
+          WQ
+        }
+
+        ggplot(data_to_plot, aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
+          geom_point(size = 4) +
+          scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+          scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+          labs(
+            x = "",
+            color = "",
+            shape = ""
+          ) +
+          theme_bw() +
+          theme(
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10),
+            axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.text = element_text(color = "white"),
+            legend.position = "top"
+          ) +
+          guides(
+            color = guide_legend(title = NULL, override.aes = list(size = 0, shape = NA, color = "white")),
+            shape = guide_legend(title = NULL, override.aes = list(size = 0, shape = NA))
+          )
       }
-
-      # Check if the dataset is empty or if the selected column exists
-      if (nrow(data_to_plot) == 0) {
-        print("No data available in the selected dataset.")
-        return(NULL)
-      }
-
-      # Debugging: Check if the selected column exists in the data
-      print(paste("Selected Column:", input$leftWQSelect))
-      print(names(data_to_plot))
-
-      ggplot(data_to_plot, aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
-        geom_point(size = 4) +
-        scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black"), labels = c("", "")) +
-        scale_shape_manual(values = c("EPI" = 19, "HYP" = 17), labels = c("", "")) +
-        labs(
-          x = "",
-          # y = "Total Phosphorus (µg/L)",
-          color = "",
-          shape = ""
-        ) +
-        theme_bw() +
-        theme(
-          axis.title = element_text(size = 12),
-          axis.text = element_text(size = 10),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, hjust = 1)
-        ) +
-        guides(color = guide_legend(override.aes = list(size = 0, shape = NA)),
-               shape = guide_legend(override.aes = list(size = 0, shape = NA)))
     }
   })
 
-  # Water Quality Graph 2
+
+
+  # Water Quality Graph 2 (Right)
   output$msTabSplitRight <- renderPlot({
     if (input$msTab == "Water Quality") {
-      # Determine which dataset to use
-      data_to_plot <- if (input$rightWQSelect == "Dissolved Organic Carbon") {
-        WQDOC
+      # Special case for Secchi Depth
+      if (input$rightWQSelect == "Secchi Depth") {
+        ggplot(WQSecchi, aes(x = date, y = secchi)) +
+          geom_point(size = 4, color = "#1f908c") +
+          labs(
+            x = "",
+            y = "Secchi Depth (m)",
+            color = ""
+          ) +
+          theme_bw() +
+          scale_y_continuous(limits = c(0, 15)) +
+          theme(
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10),
+            legend.position = "none",
+            axis.text.x = element_text(angle = 45, hjust = 1)
+          )
+
       } else {
-        WQ
+        # Select correct dataset
+        data_to_plot <- if (input$rightWQSelect == "Dissolved Organic Carbon") {
+          WQDOC
+        } else {
+          WQ
+        }
+
+        ggplot(data_to_plot, aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
+          geom_point(size = 4) +
+          scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
+          scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+          labs(
+            x = "",
+            color = "",
+            shape = ""
+          ) +
+          theme_bw() +
+          theme(
+            axis.title = element_text(size = 12),
+            axis.text = element_text(size = 10),
+            legend.position = "top",
+            axis.text.x = element_text(angle = 45, hjust = 1)
+          )
       }
-
-      # Check if the dataset is empty or if the selected column exists
-      if (nrow(data_to_plot) == 0) {
-        print("No data available in the selected dataset.")
-        return(NULL)
-      }
-
-      # Debugging: Check if the selected column exists in the data
-      print(paste("Selected Column:", input$rightWQSelect))
-      print(names(data_to_plot))
-
-      ggplot(data_to_plot, aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
-        geom_point(size = 4) +
-        scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
-        scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
-        labs(
-          x = "",
-          # y = "Total Nitrogen (label)",
-          color = "",
-          shape = ""
-        ) +
-        theme_bw() +
-        theme(
-          axis.title = element_text(size = 12),
-          axis.text = element_text(size = 10),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, hjust = 1)
-        )
     }
   })
+
+
 
 
 
