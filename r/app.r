@@ -3,8 +3,10 @@ library(ggplot2)
 library(colorRamps)
 library(dplyr)
 library(tidyr)
+library(ggh4x)
 
-#TODO: Change WQ y-axis & units, figure out legend, axis limits on dual YSI, load in new interpolated data for heatmap, add the rest of the WQ data
+#TODO: Change WQ y-axis & units, add secchi depth
+#TODO: Wedneday meeting: ask about interpolated heat data, check dual YSI x-axis
 
 # Load Lake Data
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
@@ -13,8 +15,10 @@ subDailyLakeData <- read.table("./r/data/SubDailyAverage.txt", header = TRUE, se
 interpolatedLakeData <- read.table("./r/data/interpolate.txt", header = TRUE, sep = "\t")
 YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
 WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
+WQDOC <- read.table("./r/data/2024_lng_DOC_for_analysis.txt", header = TRUE, sep = "\t")
+WQSecchi <- read.table("./r/data/secchi.txt", header = TRUE, sep = "\t")
 
-# Standardize column names for high frequency data
+# Standardize column names
 colnames(dailyLakeData) <- c("sensorType", "meter", "date",
                              "value", "STD", "var", "n")
 colnames(subDailyLakeData) <- c("date", "value", "meter", "sensorType")
@@ -22,6 +26,9 @@ colnames(interpolatedLakeData) <- c("date", "meter", "dataSource", "temp", "do")
 colnames(YSI) <- c("date", "meter", "temp", "do")
 colnames(WQ) <- c("date", "site", "Total Phosphorus", "Total Nitrogen",
                   "Ammonium", "Soluble Reactive Phosphorus", "Chlorophyll A", "Iron")
+colnames(WQDOC) <- c("date", "lake", "site", "Dissolved Organic Carbon", "n_reps", "min DOC mgl", "max DOC mgl")
+colnames(WQSecchi) <- c("date", "Secchi Depth")
+
 # Define UI
 ui <- fluidPage(
   titlePanel(""),
@@ -75,7 +82,8 @@ ui <- fluidPage(
                ),
              )
     ),
-    selected = "High-Frequency Data"
+    # selected = "High-Frequency Data"
+    selected = "Manual Sampling"
   )
 )
 
@@ -98,8 +106,8 @@ server <- function(input, output, session) {
   DailyHeat$date <- as.Date(DailyHeat$date)
   subDailyDO$date <- as.POSIXct(subDailyDO$date, format = "%Y-%m-%d %H:%M:%S")
   subDailyHeat$date <- as.POSIXct(subDailyHeat$date, format = "%Y-%m-%d %H:%M:%S")
-  # interpolatedLakeData$date <- as.Date(interpolatedLakeData$date)
-  interpolatedLakeData$date <- as.POSIXct(interpolatedLakeData$date, format = "%Y-%m-%d")
+  interpolatedLakeData$date <- as.Date(interpolatedLakeData$date)
+  # interpolatedLakeData$date <- as.POSIXct(interpolatedLakeData$date, format = "%Y-%m-%d")
 
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
@@ -200,18 +208,18 @@ server <- function(input, output, session) {
     else if (input$msTab == "Water Quality") {
       tagList(
         selectInput(
-          "rightWQSelect",
-          "Select Right Graph",
-          # choices = WQChoices,
-          # selected = WQChoices[1]
-          choices = WQChoices,
-          selected = WQChoices[1]
-        ),
-        selectInput(
           "leftWQSelect",
           "Select Left Graph",
           # choices = WQChoices[-1],
           # selected = WQChoices[2]
+          choices = WQChoices,
+          selected = WQChoices[1]
+        ),
+        selectInput(
+          "rightWQSelect",
+          "Select Right Graph",
+          # choices = WQChoices,
+          # selected = WQChoices[1]
           choices = WQChoices,
           selected = WQChoices[2]
         )
@@ -281,11 +289,6 @@ server <- function(input, output, session) {
           pivot_longer(cols = c(temp, do), names_to = "Measurement", values_to = "Value")
       }
     }
-
-    else if (input$msTab == "Water Quality") {
-      selected <- WQ
-    }
-
     return(selected)
   })
 
@@ -312,7 +315,7 @@ server <- function(input, output, session) {
           # TODO: uncomment when heatmap bug is fixed
           # breaks = min(interpolatedHeatDepthChoices):max(interpolatedHeatDepthChoices)
         ) +
-        # scale_fill_viridis_c(limits = c(5, 30), breaks = seq(5, 30, by = 5)) +
+        scale_fill_viridis_c(limits = c(5, 30), breaks = seq(5, 30, by = 5)) +
         scale_x_date(position = "top") +
         labs(
           x = "",
@@ -394,13 +397,20 @@ server <- function(input, output, session) {
     }
     else if (input$YSIGraphSelect == "Both") {
       ggplot(selectedMS(), aes(x = Value, y = meter, color = as.factor(date), group = interaction(date, Measurement))) +
-        geom_path() +
-        geom_point() +
+        geom_path(size = 1) +
+        geom_point(size = 3) +
         scale_y_reverse() +
         scale_color_viridis_d() +
-        facet_wrap(~Measurement, scales = "free_x", labeller = as_labeller(c(temp = "Temperature (°C)", do = "Dissolved Oxygen (mg/L)"))) +
+        facet_wrap(~Measurement, scales = "free_x",
+                   labeller = as_labeller(c(temp = "Temperature (°C)", do = "Dissolved Oxygen (mg/L)"))) +
         theme_minimal() +
-        labs(x = "", y = "Depth (m)", color = "Date")
+        labs(x = "", y = "Depth (m)", color = "Date") +
+        facetted_pos_scales(
+          x = list(
+            "do"   = scale_x_continuous(breaks = seq(0, 15, by = 3), limits = c(0, 15)),
+            "temp" = scale_x_continuous(breaks = seq(0, 30, by = 5), limits = c(0, 30))
+          )
+        )
     }
   })
 
@@ -409,10 +419,27 @@ server <- function(input, output, session) {
   # Water Quality Graph 1
   output$msTabSplitLeft <- renderPlot({
     if (input$msTab == "Water Quality") {
-      ggplot(selectedMS(), aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
+      # Determine which dataset to use
+      data_to_plot <- if (input$leftWQSelect == "Dissolved Organic Carbon") {
+        WQDOC
+      } else {
+        WQ
+      }
+
+      # Check if the dataset is empty or if the selected column exists
+      if (nrow(data_to_plot) == 0) {
+        print("No data available in the selected dataset.")
+        return(NULL)
+      }
+
+      # Debugging: Check if the selected column exists in the data
+      print(paste("Selected Column:", input$leftWQSelect))
+      print(names(data_to_plot))
+
+      ggplot(data_to_plot, aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
         geom_point(size = 4) +
-        scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
-        scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+        scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black"), labels = c("", "")) +
+        scale_shape_manual(values = c("EPI" = 19, "HYP" = 17), labels = c("", "")) +
         labs(
           x = "",
           # y = "Total Phosphorus (µg/L)",
@@ -423,16 +450,35 @@ server <- function(input, output, session) {
         theme(
           axis.title = element_text(size = 12),
           axis.text = element_text(size = 10),
-          legend.position = "none",
+          legend.position = "top",
           axis.text.x = element_text(angle = 45, hjust = 1)
-        )
+        ) +
+        guides(color = guide_legend(override.aes = list(size = 0, shape = NA)),
+               shape = guide_legend(override.aes = list(size = 0, shape = NA)))
     }
   })
 
   # Water Quality Graph 2
   output$msTabSplitRight <- renderPlot({
     if (input$msTab == "Water Quality") {
-      ggplot(selectedMS(), aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
+      # Determine which dataset to use
+      data_to_plot <- if (input$rightWQSelect == "Dissolved Organic Carbon") {
+        WQDOC
+      } else {
+        WQ
+      }
+
+      # Check if the dataset is empty or if the selected column exists
+      if (nrow(data_to_plot) == 0) {
+        print("No data available in the selected dataset.")
+        return(NULL)
+      }
+
+      # Debugging: Check if the selected column exists in the data
+      print(paste("Selected Column:", input$rightWQSelect))
+      print(names(data_to_plot))
+
+      ggplot(data_to_plot, aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
         geom_point(size = 4) +
         scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
         scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
@@ -451,6 +497,9 @@ server <- function(input, output, session) {
         )
     }
   })
+
+
+
 }
 
 # Run the application
