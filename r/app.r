@@ -5,8 +5,8 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO: Change WQ y-axis & units
-#TODO: Wedneday meeting: ask about interpolated heat data, check dual YSI x-axis
+#TODO Things left to:
+#TODO Meeting topics: ask about interpolated heat data, check dual YSI x-axis, secchi graph, WQ units, WQ limits
 
 # Load Lake Data
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
@@ -292,6 +292,52 @@ server <- function(input, output, session) {
     return(selected)
   })
 
+  # Y-axis limits for left WQ graphs
+  WQYScaleLeft <- reactive({
+    req(input$leftWQSelect)
+
+    if (input$leftWQSelect == "Total Phosphorus") {
+      scale_y_continuous(breaks = seq(5, 25, by = 5), limits = c(5, 25))
+    } else if (input$leftWQSelect == "Total Nitrogen") {
+      scale_y_continuous(breaks = seq(0.1, 0.3, by = 0.1), limits = c(0.1, 0.3))
+    } else if (input$leftWQSelect == "Iron") {
+      scale_y_continuous(breaks = seq(0.04, 0.1, by = 0.02), limits = c(0.04, 0.1))
+    } else if (input$leftWQSelect == "Dissolved Organic Carbon") {
+      scale_y_continuous(breaks = seq(2, 4, by = 0.5), limits = c(2, 4))
+    } else if (input$leftWQSelect == "Soluble Reactive Phosphorus") {
+      scale_y_continuous(breaks = seq(0, 8, by = 2), limits = c(0, 8))
+    } else if (input$leftWQSelect == "Ammonium") {
+      scale_y_continuous(breaks = seq(0, 0.6, by = 0.2), limits = c(0, 0.6))
+    } else if (input$leftWQSelect == "Chlorophyll A") {
+      scale_y_continuous(breaks = seq(0, 15, by = 5), limits = c(0, 15))
+    } else {
+      scale_y_continuous()  # Default if no match
+    }
+  })
+
+  # Y-axis limits for right WQ graphs
+  WQYScaleRight <- reactive({
+    req(input$rightWQSelect)
+
+    if (input$rightWQSelect == "Total Phosphorus") {
+      scale_y_continuous(breaks = seq(5, 25, by = 5), limits = c(5, 25))
+    } else if (input$rightWQSelect == "Total Nitrogen") {
+      scale_y_continuous(breaks = seq(0.1, 0.3, by = 0.1), limits = c(0.1, 0.3))
+    } else if (input$rightWQSelect == "Iron") {
+      scale_y_continuous(breaks = seq(0.04, 0.1, by = 0.02), limits = c(0.04, 0.1))
+    } else if (input$rightWQSelect == "Dissolved Organic Carbon") {
+      scale_y_continuous(breaks = seq(2, 4, by = 0.5), limits = c(2, 4))
+    } else if (input$rightWQSelect == "Soluble Reactive Phosphorus") {
+      scale_y_continuous(breaks = seq(0, 8, by = 2), limits = c(0, 8))
+    } else if (input$rightWQSelect == "Ammonium") {
+      scale_y_continuous(breaks = seq(0, 0.6, by = 0.2), limits = c(0, 0.6))
+    } else if (input$rightWQSelect == "Chlorophyll A") {
+      scale_y_continuous(breaks = seq(0, 15, by = 5), limits = c(0, 15))
+    } else {
+      scale_y_continuous()  # Default if no match
+    }
+  })
+
   # Manual color settings for depths
   depthColors <- c("1.52" = "#f87a71", "2.52" = "#c39b24", "3.52" = "#54b321", "4.52" = "#05be95",
                    "5.52" = "#08b4e8", "6.52" = "#a68bfc", "7.52" = "#fb66d5")
@@ -304,6 +350,26 @@ server <- function(input, output, session) {
                    "5.52" = 4,   # X letter
                    "6.52" = 3,   # + sign
                    "7.52" = 25)  # Triangle point-down
+
+  WQYAxisLabel <- function(selectedParam) {
+    if (selectedParam == "Total Phosphorus") {
+      "Total Phosphorus (µg/L)"
+    } else if (selectedParam == "Total Nitrogen") {
+      "Total Nitrogen (mg/L)"
+    } else if (selectedParam == "Iron") {
+      "Iron (mg/L)" #TODO: ?????
+    } else if (selectedParam == "Dissolved Organic Carbon") {
+      "Dissolved Organic Carbon (mg/L)" #TODO: ?????
+    } else if (selectedParam == "Soluble Reactive Phosphorus") {
+      "Soluble Reactive Phosphorus (µg/L)"
+    } else if (selectedParam == "Ammonium") {
+      "Ammonium (mg/L)"
+    } else if (selectedParam == "Chlorophyll A") {
+      "Chlorophyll A (µg/L)"
+    } else {
+      selectedParam
+    }
+  }
 
   # Graphs
   output$HFPlot <- renderPlot({
@@ -407,13 +473,12 @@ server <- function(input, output, session) {
         labs(x = "", y = "Depth (m)", color = "Date") +
         facetted_pos_scales(
           x = list(
-            "do"   = scale_x_continuous(breaks = seq(0, 15, by = 3), limits = c(0, 15)),
+            "do" = scale_x_continuous(breaks = seq(0, 15, by = 3), limits = c(0, 15)),
             "temp" = scale_x_continuous(breaks = seq(0, 30, by = 5), limits = c(0, 30))
           )
         )
     }
   })
-
 
   # Water Quality Graph 1 (Left)
   output$msTabSplitLeft <- renderPlot({
@@ -449,8 +514,10 @@ server <- function(input, output, session) {
           geom_point(size = 4) +
           scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
           scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+          WQYScaleLeft() +
           labs(
             x = "",
+            y = WQYAxisLabel(input$leftWQSelect),
             color = "",
             shape = ""
           ) +
@@ -469,8 +536,6 @@ server <- function(input, output, session) {
       }
     }
   })
-
-
 
   # Water Quality Graph 2 (Right)
   output$msTabSplitRight <- renderPlot({
@@ -504,9 +569,10 @@ server <- function(input, output, session) {
         ggplot(data_to_plot, aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
           geom_point(size = 4) +
           scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
-          scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
+          WQYScaleRight() +
           labs(
             x = "",
+            y = WQYAxisLabel(input$rightWQSelect),
             color = "",
             shape = ""
           ) +
@@ -520,11 +586,6 @@ server <- function(input, output, session) {
       }
     }
   })
-
-
-
-
-
 }
 
 # Run the application
