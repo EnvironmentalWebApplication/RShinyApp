@@ -5,8 +5,8 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO Things left to:
-#TODO Meeting topics: ask about interpolated heat data, check dual YSI x-axis, secchi graph, WQ units, WQ limits
+#TODO Things left to: secchi ratio, swap interpolated data set, swap wq data set adding nitrate
+#TODO Meeting topics:
 
 # Load Lake Data
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
@@ -357,9 +357,9 @@ server <- function(input, output, session) {
     } else if (selectedParam == "Total Nitrogen") {
       "Total Nitrogen (mg/L)"
     } else if (selectedParam == "Iron") {
-      "Iron (mg/L)" #TODO: ?????
+      "Iron (mg/L)"
     } else if (selectedParam == "Dissolved Organic Carbon") {
-      "Dissolved Organic Carbon (mg/L)" #TODO: ?????
+      "Dissolved Organic Carbon (mg/L)"
     } else if (selectedParam == "Soluble Reactive Phosphorus") {
       "Soluble Reactive Phosphorus (µg/L)"
     } else if (selectedParam == "Ammonium") {
@@ -494,7 +494,7 @@ server <- function(input, output, session) {
             shape = ""
           ) +
           theme_bw() +
-          scale_y_continuous(limits = c(0, 15)) +
+          scale_y_continuous(limits = c(0, 10)) +
           theme(
             axis.title = element_text(size = 12),
             axis.text = element_text(size = 10),
@@ -550,7 +550,7 @@ server <- function(input, output, session) {
             color = ""
           ) +
           theme_bw() +
-          scale_y_continuous(limits = c(0, 15)) +
+          scale_y_continuous(limits = c(0, 10)) +
           theme(
             axis.title = element_text(size = 12),
             axis.text = element_text(size = 10),
