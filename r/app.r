@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO Things left to: secchi ratio, swap interpolated data set, swap wq data set adding nitrate
+#TODO Things left to: swap interpolated data set, swap wq data set adding nitrate
 #TODO Meeting topics:
 
 # Load Lake Data
@@ -487,21 +487,21 @@ server <- function(input, output, session) {
       if (input$leftWQSelect == "Secchi Depth") {
         ggplot(WQSecchi, aes(x = date, y = secchi)) +
           geom_point(size = 4, color = "#1f908c") +
+          geom_point(aes(fill = " "), alpha = 0) +
           labs(
             x = "",
             y = "Secchi Depth (m)",
-            color = "",
-            shape = ""
+            fill = " "
           ) +
           theme_bw() +
           scale_y_continuous(limits = c(0, 10)) +
+          scale_fill_manual(values = c("white"), guide = guide_legend()) +
           theme(
             axis.title = element_text(size = 12),
             axis.text = element_text(size = 10),
             axis.text.x = element_text(angle = 45, hjust = 1),
-            legend.position = "none"
+            legend.position = "top"
           )
-
       } else {
         # Select correct dataset
         data_to_plot <- if (input$leftWQSelect == "Dissolved Organic Carbon") {
@@ -544,20 +544,21 @@ server <- function(input, output, session) {
       if (input$rightWQSelect == "Secchi Depth") {
         ggplot(WQSecchi, aes(x = date, y = secchi)) +
           geom_point(size = 4, color = "#1f908c") +
+          geom_point(aes(fill = " "), alpha = 0) +
           labs(
             x = "",
             y = "Secchi Depth (m)",
-            color = ""
+            fill = " "
           ) +
           theme_bw() +
           scale_y_continuous(limits = c(0, 10)) +
+          scale_fill_manual(values = c("white"), guide = guide_legend()) +
           theme(
             axis.title = element_text(size = 12),
             axis.text = element_text(size = 10),
-            legend.position = "none",
-            axis.text.x = element_text(angle = 45, hjust = 1)
+            axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "top"
           )
-
       } else {
         # Select correct dataset
         data_to_plot <- if (input$rightWQSelect == "Dissolved Organic Carbon") {
