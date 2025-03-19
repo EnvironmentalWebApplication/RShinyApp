@@ -12,7 +12,6 @@ library(ggh4x)
 # lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
 dailyLakeData <- read.table("./r/data/DailyAverage.txt", header = TRUE, sep = "\t")
 subDailyLakeData <- read.table("./r/data/SubDailyAverage.txt", header = TRUE, sep = "\t")
-interpolatedLakeData <- read.table("./r/data/interpolate.txt", header = TRUE, sep = "\t")
 YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
 WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
 WQDOC <- read.table("./r/data/2024_lng_DOC_for_analysis.txt", header = TRUE, sep = "\t")
@@ -22,7 +21,6 @@ WQSecchi <- read.table("./r/data/secchi.txt", header = TRUE, sep = "\t")
 colnames(dailyLakeData) <- c("sensorType", "meter", "date",
                              "value", "STD", "var", "n")
 colnames(subDailyLakeData) <- c("date", "value", "meter", "sensorType")
-colnames(interpolatedLakeData) <- c("date", "meter", "dataSource", "temp", "do")
 colnames(YSI) <- c("date", "meter", "temp", "do")
 colnames(WQ) <- c("date", "site", "Total Phosphorus", "Total Nitrogen",
                   "Ammonium", "Soluble Reactive Phosphorus", "Chlorophyll A", "Iron")
@@ -82,8 +80,8 @@ ui <- fluidPage(
                ),
              )
     ),
-    # selected = "High-Frequency Data"
-    selected = "Manual Sampling"
+    selected = "High-Frequency Data"
+    # selected = "Manual Sampling"
   )
 )
 
@@ -99,15 +97,12 @@ server <- function(input, output, session) {
   #Find all depths of the different sensors
   doDepthChoices <- sort(unique(DailyDO$meter), decreasing = FALSE)
   heatDepthChoices <- sort(unique(DailyHeat$meter), decreasing = FALSE)
-  interpolatedHeatDepthChoices <- sort(unique(interpolatedLakeData$meter), decreasing = FALSE)
 
   #Format days
   DailyDO$date <- as.Date(DailyDO$date)
   DailyHeat$date <- as.Date(DailyHeat$date)
   subDailyDO$date <- as.POSIXct(subDailyDO$date, format = "%Y-%m-%d %H:%M:%S")
   subDailyHeat$date <- as.POSIXct(subDailyHeat$date, format = "%Y-%m-%d %H:%M:%S")
-  interpolatedLakeData$date <- as.Date(interpolatedLakeData$date)
-  # interpolatedLakeData$date <- as.POSIXct(interpolatedLakeData$date, format = "%Y-%m-%d")
 
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
@@ -172,12 +167,12 @@ server <- function(input, output, session) {
       )
     } else if (input$graphSelect == "Heatmap") {
       dateRangeInput(
-        "interpolatedHeatDates",
+        "heatmapDateChoices",
         "Select Date Range",
-        start = min(interpolatedLakeData$date),
-        end = max(interpolatedLakeData$date),
-        min = min(interpolatedLakeData$date),
-        max = max(interpolatedLakeData$date),
+        start = min(DailyHeat$date),
+        end = max(DailyHeat$date),
+        min = min(DailyHeat$date),
+        max = max(DailyHeat$date),
         format = "mm/dd/yyyy"
       )
     }
@@ -210,16 +205,12 @@ server <- function(input, output, session) {
         selectInput(
           "leftWQSelect",
           "Select Left Graph",
-          # choices = WQChoices[-1],
-          # selected = WQChoices[2]
           choices = WQChoices,
           selected = WQChoices[1]
         ),
         selectInput(
           "rightWQSelect",
           "Select Right Graph",
-          # choices = WQChoices,
-          # selected = WQChoices[1]
           choices = WQChoices,
           selected = WQChoices[2]
         )
@@ -227,23 +218,14 @@ server <- function(input, output, session) {
     }
   })
 
-  # #TODO: Bug where changes an input doesn't affect the graphs
-  # observeEvent(input$leftWQSelect, {
-  #   updateSelectInput(session, "rightWQSelect", choices = setdiff(WQChoices, input$leftWQSelect))
-  # })
-  #
-  # observeEvent(input$rightWQSelect, {
-  #   updateSelectInput(session, "leftWQSelect", choices = setdiff(WQChoices, input$rightWQSelect))
-  # })
-
   # Select data based on user input
   selectedHF <- reactive({
     req(input$graphSelect)
 
     # DO data
     if (input$graphSelect == "Heatmap") {
-      selected <- interpolatedLakeData[interpolatedLakeData$date >= input$interpolatedHeatDates[1] &
-                              interpolatedLakeData$date <= input$interpolatedHeatDates[2],]
+      selected <- DailyHeat[DailyHeat$date >= input$heatmapDateChoices[1] &
+                              DailyHeat$date <= input$heatmapDateChoices[2],]
     }
       # Heatmap data
     else if (input$graphSelect == "DO at Depth") {
@@ -374,12 +356,11 @@ server <- function(input, output, session) {
   # Graphs
   output$HFPlot <- renderPlot({
     if (input$graphSelect == "Heatmap") {
-      ggplot(selectedHF(), aes(x = date, y = meter, fill = temp)) +
+      ggplot(selectedHF(), aes(x = date, y = meter, fill = value)) +
         geom_raster(interpolate = T) +
         scale_y_continuous(
           trans = "reverse",
-          # TODO: uncomment when heatmap bug is fixed
-          # breaks = min(interpolatedHeatDepthChoices):max(interpolatedHeatDepthChoices)
+          breaks = min(heatDepthChoices):max(heatDepthChoices)
         ) +
         scale_fill_viridis_c(limits = c(5, 30), breaks = seq(5, 30, by = 5)) +
         scale_x_date(position = "top") +
