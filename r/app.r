@@ -9,7 +9,6 @@ library(ggh4x)
 #TODO Meeting topics:
 
 # Load Lake Data
-# lakeData <- read.csv("./r/data/Cleaned_LongPond_08082024.csv") OLD DATA
 dailyLakeData <- read.table("./r/data/DailyAverage.txt", header = TRUE, sep = "\t")
 subDailyLakeData <- read.table("./r/data/SubDailyAverage.txt", header = TRUE, sep = "\t")
 YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
