@@ -17,8 +17,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          R -e 'install.packages("rsconnect")'
-          R -e 'install.packages(c("shiny", "ggplot2", "colorRamps", "dplyr", "tidyr", "ggh4x"))'
+          R -e 'install.packages("remotes")'
+          R -e 'remotes::install_cran(c("rsconnect", "shiny", "ggplot2", "colorRamps", "dplyr", "tidyr", "ggh4x"))'
 
       - name: Deploy to shinyapps.io
         env:
@@ -26,7 +26,8 @@ jobs:
           SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
           SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
         run: |
-          R -e 'rsconnect::setAccountInfo(name=Sys.getenv("SHINYAPPS_NAME"), 
+          R -e 'library(rsconnect); 
+                rsconnect::setAccountInfo(name=Sys.getenv("SHINYAPPS_NAME"), 
                                           token=Sys.getenv("SHINYAPPS_TOKEN"), 
                                           secret=Sys.getenv("SHINYAPPS_SECRET"))'
-          R -e 'rsconnect::deployApp()'
+          R -e 'rsconnect::deployApp()'  # Change to deployApp("r/") if app is in "r/" subdirectory
