@@ -9,12 +9,12 @@ library(ggh4x)
 #TODO Meeting topics:
 
 # Load Lake Data
-dailyLakeData <- read.table("./r/data/DailyAverage.txt", header = TRUE, sep = "\t")
-subDailyLakeData <- read.table("./r/data/SubDailyAverage.txt", header = TRUE, sep = "\t")
-YSI <- read.table("./r/data/ysi.txt", header = TRUE, sep = "\t")
-WQ <- read.table("./r/data/wq.txt", header = TRUE, sep = "\t")
-WQDOC <- read.table("./r/data/2024_lng_DOC_for_analysis.txt", header = TRUE, sep = "\t")
-WQSecchi <- read.table("./r/data/secchi.txt", header = TRUE, sep = "\t")
+dailyLakeData <- read.table("./data/DailyAverage.txt", header = TRUE, sep = "\t")
+subDailyLakeData <- read.table("./data/SubDailyAverage.txt", header = TRUE, sep = "\t")
+YSI <- read.table("./data/ysi.txt", header = TRUE, sep = "\t")
+WQ <- read.table("./data/wq.txt", header = TRUE, sep = "\t")
+WQDOC <- read.table("./data/2024_lng_DOC_for_analysis.txt", header = TRUE, sep = "\t")
+WQSecchi <- read.table("./data/secchi.txt", header = TRUE, sep = "\t")
 
 # Standardize column names
 colnames(dailyLakeData) <- c("sensorType", "meter", "date",
