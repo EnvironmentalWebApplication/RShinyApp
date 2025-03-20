@@ -27,8 +27,8 @@ To run the Shiny app locally, follow these steps:
 1. Clone the repository:
    ```sh
    git clone https://github.com/joshparent/EnvironmentalWebApplication.git
-   cd your-shiny-app
-   
+   cd EnvironmentalWebApplication
+
 2. Install required R packages:
    ```sh
    install.packages(c("shiny", "ggplot2", "dplyr", "tidyr", "colorRamps", "ggh4x"))
