@@ -38,10 +38,10 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  selectInput(
-                   "graphSelect",
+                   "HFGraphSelect",
                    "Select Graph",
                    choices = c("Heatmap", "DO at Depth", "Temperature at Depth"),
-                   selected = "Heatmap"
+                   selected = "DO at Depth"
                  ),
                  uiOutput("graphParameters"),
                  uiOutput("dateParameters")
@@ -79,14 +79,14 @@ ui <- fluidPage(
                ),
              )
     ),
-    selected = "High-Frequency Data"
-    # selected = "Manual Sampling"
+    # selected = "High-Frequency Data"
+    selected = "Manual Sampling"
   )
 )
 
 
 # Define server logic
-server <- function(input, output, session) {
+server <- function(input, output) {
   #Filter the data into sensor types
   DailyDO <- dailyLakeData[dailyLakeData$sensorType == "DO",]
   DailyHeat <- dailyLakeData[dailyLakeData$sensorType == "Temp",]
@@ -105,10 +105,10 @@ server <- function(input, output, session) {
 
   # Graph settings (check boxes)
   output$graphParameters <- renderUI({
-    if (input$graphSelect == "Heatmap") {
+    if (input$HFGraphSelect == "Heatmap") {
       # Placeholder to add graph parameters to heatmap
     }
-    else if (input$graphSelect == "DO at Depth") {
+    else if (input$HFGraphSelect == "DO at Depth") {
       tagList(
         selectInput(
           "frequencyDO",
@@ -123,7 +123,7 @@ server <- function(input, output, session) {
           selected = c("1.52", "2.52", "3.52", "4.52", "5.52", "6.52", "7.52")
         )
       )
-    } else if (input$graphSelect == "Temperature at Depth") {
+    } else if (input$HFGraphSelect == "Temperature at Depth") {
       tagList(
         selectInput(
           "frequencyHeat",
@@ -144,7 +144,7 @@ server <- function(input, output, session) {
 
   # Date settings (Calander)
   output$dateParameters <- renderUI({
-    if (input$graphSelect == "DO at Depth") {
+    if (input$HFGraphSelect == "DO at Depth") {
       dateRangeInput(
         "doDates",
         "Select Date Range",
@@ -154,7 +154,7 @@ server <- function(input, output, session) {
         max = max(DailyDO$date),
         format = "mm/dd/yyyy"
       )
-    } else if (input$graphSelect == "Temperature at Depth") {
+    } else if (input$HFGraphSelect == "Temperature at Depth") {
       dateRangeInput(
         "heatDates",
         "Select Date Range",
@@ -164,7 +164,7 @@ server <- function(input, output, session) {
         max = max(DailyHeat$date),
         format = "mm/dd/yyyy"
       )
-    } else if (input$graphSelect == "Heatmap") {
+    } else if (input$HFGraphSelect == "Heatmap") {
       dateRangeInput(
         "heatmapDateChoices",
         "Select Date Range",
@@ -219,15 +219,16 @@ server <- function(input, output, session) {
 
   # Select data based on user input
   selectedHF <- reactive({
-    req(input$graphSelect)
+    req(input$HFGraphSelect)
 
     # DO data
-    if (input$graphSelect == "Heatmap") {
+    if (input$HFGraphSelect == "Heatmap") {
       selected <- DailyHeat[DailyHeat$date >= input$heatmapDateChoices[1] &
                               DailyHeat$date <= input$heatmapDateChoices[2],]
     }
-      # Heatmap data
-    else if (input$graphSelect == "DO at Depth") {
+    # Heatmap data
+    else if (input$HFGraphSelect == "DO at Depth") {
+      req(input$frequencyDO)
       if (input$frequencyDO == "Daily Average") {
         selected <- DailyDO[DailyDO$meter %in% input$doDepth &
                               DailyDO$date >= input$doDates[1] &
@@ -239,8 +240,9 @@ server <- function(input, output, session) {
                                  as.Date(subDailyDO$date) <= input$doDates[2],]
       }
     }
-      # Heat scatterplot data
-    else if (input$graphSelect == "Temperature at Depth") {
+    # Heat scatterplot data
+    else if (input$HFGraphSelect == "Temperature at Depth") {
+      req(input$frequencyHeat)
       if (input$frequencyHeat == "Daily Average") {
         selected <- DailyHeat[DailyHeat$meter %in% input$heatDepth &
                                 DailyHeat$date >= input$heatDates[1] &
@@ -257,18 +259,15 @@ server <- function(input, output, session) {
   })
 
   selectedMS <- reactive({
-    req(input$msTab)
-
-    if (input$msTab == "YSI") {
-      if (input$YSIGraphSelect != "Both") {
-        selected <- YSI[YSI$date %in% input$YSIDateSelect, ]
-      }
-      else {
+    req(input$msTab, input$YSIGraphSelect, input$YSIDateSelect)
+    if (input$YSIGraphSelect != "Both") {
+      selected <- YSI[YSI$date %in% input$YSIDateSelect,]
+    }
+    else {
       selected <-
         YSI %>%
           filter(date %in% input$YSIDateSelect) %>%
           pivot_longer(cols = c(temp, do), names_to = "Measurement", values_to = "Value")
-      }
     }
     return(selected)
   })
@@ -354,7 +353,8 @@ server <- function(input, output, session) {
 
   # Graphs
   output$HFPlot <- renderPlot({
-    if (input$graphSelect == "Heatmap") {
+    req(selectedHF())
+    if (input$HFGraphSelect == "Heatmap") {
       ggplot(selectedHF(), aes(x = date, y = meter, fill = value)) +
         geom_raster(interpolate = T) +
         scale_y_continuous(
@@ -369,7 +369,7 @@ server <- function(input, output, session) {
           fill = "Temp (°C)"
         ) +
         theme_classic()
-    } else if (input$graphSelect == "DO at Depth") {
+    } else if (input$HFGraphSelect == "DO at Depth") {
       ggplot(selectedHF(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
         geom_point(size = 2) +
         scale_color_manual(values = depthColors) +
@@ -383,7 +383,7 @@ server <- function(input, output, session) {
           color = "Meter"
         ) +
         theme_bw()
-    } else if (input$graphSelect == "Temperature at Depth") {
+    } else if (input$HFGraphSelect == "Temperature at Depth") {
       ggplot(selectedHF(), aes(x = date, y = value, color = factor(meter), shape = factor(meter))) +
         geom_point(size = 2) +
         scale_color_manual(values = depthColors) +
@@ -402,6 +402,7 @@ server <- function(input, output, session) {
 
   #MS Plots
   output$MSPlot <- renderPlot({
+    req(selectedMS())
     if (input$YSIGraphSelect == "Temperature") {
       ggplot(selectedMS(), aes(x = temp, y = meter, group = date, color = date)) +
         geom_path(size = 1) +
@@ -462,6 +463,7 @@ server <- function(input, output, session) {
 
   # Water Quality Graph 1 (Left)
   output$msTabSplitLeft <- renderPlot({
+    req(input$msTab, input$leftWQSelect)
     if (input$msTab == "Water Quality") {
       # Special case for Secchi Depth
       if (input$leftWQSelect == "Secchi Depth") {
@@ -484,13 +486,13 @@ server <- function(input, output, session) {
           )
       } else {
         # Select correct dataset
-        data_to_plot <- if (input$leftWQSelect == "Dissolved Organic Carbon") {
+        selectedData <- if (input$leftWQSelect == "Dissolved Organic Carbon") {
           WQDOC
         } else {
           WQ
         }
 
-        ggplot(data_to_plot, aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
+        ggplot(selectedData, aes(x = date, y = .data[[input$leftWQSelect]], color = site, shape = site)) +
           geom_point(size = 4) +
           scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
           scale_shape_manual(values = c("EPI" = 19, "HYP" = 17)) +
@@ -519,6 +521,7 @@ server <- function(input, output, session) {
 
   # Water Quality Graph 2 (Right)
   output$msTabSplitRight <- renderPlot({
+    req(input$msTab, input$rightWQSelect)
     if (input$msTab == "Water Quality") {
       # Special case for Secchi Depth
       if (input$rightWQSelect == "Secchi Depth") {
@@ -541,13 +544,13 @@ server <- function(input, output, session) {
           )
       } else {
         # Select correct dataset
-        data_to_plot <- if (input$rightWQSelect == "Dissolved Organic Carbon") {
+        selectedData <- if (input$rightWQSelect == "Dissolved Organic Carbon") {
           WQDOC
         } else {
           WQ
         }
 
-        ggplot(data_to_plot, aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
+        ggplot(selectedData, aes(x = date, y = .data[[input$rightWQSelect]], color = site, shape = site)) +
           geom_point(size = 4) +
           scale_color_manual(values = c("EPI" = "yellow", "HYP" = "black")) +
           WQYScaleRight() +
