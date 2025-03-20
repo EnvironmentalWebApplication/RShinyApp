@@ -20,11 +20,12 @@ jobs:
       - name: Install dependencies
         run: |
           R -e 'install.packages("remotes")'
-          R -e 'remotes::install_cran(c("rsconnect", "shiny", "ggplot2", "colorRamps", "dplyr", "tidyr", "ggh4x"))'
+          R -e 'remotes::install_cran("rsconnect")'
+          R -e 'remotes::install_cran(c("shiny", "ggplot2", "colorRamps", "dplyr", "tidyr", "ggh4x"))'
 
       - name: Verify Installed Packages
         run: |
-          R -e 'installed.packages()'
+          R -e 'print(installed.packages()[,1])'
 
       - name: Deploy to shinyapps.io
         env:
@@ -32,6 +33,7 @@ jobs:
           SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
           SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
         run: |
+          R -e 'if (!requireNamespace("rsconnect", quietly=TRUE)) install.packages("rsconnect")'
           R -e 'library(rsconnect);
                 rsconnect::setAccountInfo(name=Sys.getenv("SHINYAPPS_NAME"), 
                                           token=Sys.getenv("SHINYAPPS_TOKEN"), 
