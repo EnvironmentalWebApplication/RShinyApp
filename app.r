@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO Things left: documentation
+#TODO Things left: documentation, switch heatmap to interpolated data, add new wq data
 #TODO Meeting topics:
 
 # Load all data sets
