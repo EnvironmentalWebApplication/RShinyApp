@@ -36,10 +36,3 @@ To run the Shiny app locally, follow these steps:
 3. Run the app:
    ```sh
    shiny::runApp()
-
-## Deployment
-
-This Shiny app is integrated into a separate website for public display.
-The website repository is maintained separately:
-
-PLACEHOLDER URL
