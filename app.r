@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO Things left: documentation, switch heatmap to interpolated data, add new wq data
+#TODO Things left: documentation, switch heatmap to interpolated data, add new wq data, data availability tab text
 #TODO Meeting topics:
 
 # Load all data sets
@@ -18,7 +18,7 @@ WQSecchi <- read.table("./data/secchi.txt", header = TRUE, sep = "\t")
 
 # Standardize column names on data sets
 # If a data set is switched, check the column order.  If the order changes, update the order
-# below.  Changing a column name, not the position, won't effect the app.  If a new column
+# below.  Do not change the names of the columns.  This will effec the app If a new column
 # is added, add it below.
 colnames(dailyLakeData) <- c("sensorType", "meter", "date",
                              "value", "STD", "var", "n")
