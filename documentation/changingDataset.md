@@ -15,7 +15,7 @@ This guide explains how to update the datasets used in the R Shiny app, particul
 2. **Standardize Column Names**
     - Column names are standardized to ensure consistency across the app's code. If you switch datasets, you must ensure that the new dataset has the same column order and names as the original.
     - Important: Do not change the names of the columns. Changing column names will cause issues with the app, as other parts of the code rely on these specific names.
-    - If the new dataset has a different order for the columns, update the column order in the code. If new columns are added, add them to the list of standardized column names.
+   If the new dataset has a different order for the columns, update the column order in the code. If new columns are added, add them to the list of standardized column names.
 
    ```r
    colnames(dailyLakeData) <- c("sensorType", "meter", "date",
@@ -32,4 +32,4 @@ This guide explains how to update the datasets used in the R Shiny app, particul
 4. **Check for data consistency**
    - After updating the dataset and column names, run the app to ensure that the data is properly loaded and no errors occur due to mismatched column names or data formats.
    - Verify that the new dataset is providing the expected outputs in the app's user interface and functions.
-   - Make sure the actual contents of columns are the same
+   - **Make sure the actual contents of columns are the same**, capitalization matters 
