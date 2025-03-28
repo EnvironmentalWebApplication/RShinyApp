@@ -33,6 +33,17 @@ colnames(WQSecchi) <- c("date", "secchi")
 ui <- fluidPage(
   titlePanel(""),
 
+  # Add CSS to hide footer on small screens
+  tags$style(
+    HTML("
+      @media (max-width: 768px) {
+        .footer {
+          display: none;
+        }
+      }
+    ")
+  ),
+
   # tabsetPanel to hold multiple tabPanel elements
   tabsetPanel(
 
@@ -65,13 +76,13 @@ ui <- fluidPage(
                    "msTab",
                    "Select Graph",
                    choices = c("YSI", "Water Quality"),
-                   selected = "Water Quality"
+                   selected = "YSI"
                  ),
                  uiOutput("manualSamplingParameters")
                ),
                mainPanel(
-                 # Conditional pannels based on user selected graph
-                 # Full pannel if YSI, split pannel if WQ
+                 # Conditional panels based on user selected graph
+                 # Full panel if YSI, split panel if WQ
                  conditionalPanel(
                    condition = "input.msTab == 'YSI'",
                    plotOutput("MSPlot")
@@ -83,10 +94,17 @@ ui <- fluidPage(
                      plotOutput('msTabSplitRight')
                    )
                  )
-               ),
+               )
              )
     ),
     selected = "High-Frequency Data"
+  ),
+
+  # Footer
+  tags$footer(
+    "We thank the New York State Parks, Recreation and Historic Preservation Grant #T003655 for funding this work. We thank the following people for assisting with data collection: Lauri Ahrens, Jenna Robinson, Caitlin Williams, Charles Stetler, and Katelyn Stetler. We thank numerous State Park and Grafton Lakes employees for assisting with logistics during the sampling season. We thank Kevin Rose for lending equipment (Turner C6) and sharing lab space.",
+    class = "footer",
+    style = "position:fixed; bottom:0; width:100%; background-color:#f8f9fa; padding:10px; text-align:left; z-index:1000;"
   )
 )
 
