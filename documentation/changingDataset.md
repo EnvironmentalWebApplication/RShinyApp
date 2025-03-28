@@ -13,10 +13,10 @@ This guide explains how to update the datasets used in the R Shiny app, particul
    dailyLakeData <- read.table("./data/DailyAverage.txt", header = TRUE, sep = "\t")
 
 2. **Standardize Column Names**
-    - Column names are standardized to ensure consistency across the app's code. If you switch datasets, you must ensure that the new dataset has the same column order and names as the original.
-    - Important: Do not change the names of the columns. Changing column names will cause issues with the app, as other parts of the code rely on these specific names.
+    - Column names are standardized to ensure consistency across the app's code. If you switch datasets, update colnames() accordingly.
+    - Important: Do not change the names of the columns in the colnames() function. Changing column names will cause issues with the app, as other parts of the code rely on these specific names.
    
-   If the new dataset has a different order for the columns, update the column order in the code. If new columns are added, add them to the list of standardized column names.
+   If the new dataset has a different order for the columns, update the column order in the code.
    ```r
    colnames(dailyLakeData) <- c("sensorType", "meter", "date",
                              "value", "STD", "var", "n")
