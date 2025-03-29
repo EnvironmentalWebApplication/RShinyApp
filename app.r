@@ -5,7 +5,8 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO Things left: documentation, switch heatmap to interpolated data, add new wq data, data availability tab text
+#TODO Must Do: Add padding to right side of footer
+#TODO Optional: switch heatmap to interpolated data, add new wq data,
 #TODO Meeting topics:
 
 # Load all data sets
@@ -104,7 +105,7 @@ ui <- fluidPage(
   tags$footer(
     "We thank the New York State Parks, Recreation and Historic Preservation Grant #T003655 for funding this work. We thank the following people for assisting with data collection: Lauri Ahrens, Jenna Robinson, Caitlin Williams, Charles Stetler, and Katelyn Stetler. We thank numerous State Park and Grafton Lakes employees for assisting with logistics during the sampling season. We thank Kevin Rose for lending equipment (Turner C6) and sharing lab space.",
     class = "footer",
-    style = "position:fixed; bottom:0; width:100%; background-color:#f8f9fa; padding:10px; text-align:left; z-index:1000;"
+    style = "position: relative; width: 100%; background-color: #f8f9fa; padding: 10px 10px 10px 10px; text-align: left; z-index: 1000;"
   )
 )
 
