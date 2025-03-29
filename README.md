@@ -2,7 +2,7 @@
 
 This repository contains the R Shiny application for visualizing water quality data. The app provides interactive plots and user-selectable parameters for analyzing both high-frequency data and manual sampling data.
 
-![Shiny App Screenshot](picture_of_app.png)
+![Shiny App Screenshot](pictureOfApp.png)
 
 ## Features
 
