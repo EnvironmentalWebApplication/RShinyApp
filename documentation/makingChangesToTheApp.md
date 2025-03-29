@@ -7,8 +7,8 @@ This guide outlines the process for making changes to the repository. Since the 
 If you haven't already cloned the repository, run:
 
 ```sh
- git clone https://github.com/joshparent/EnvironmentalWebApplication
- cd EnvironmentalWebApplication
+ git clone https://github.com/EnvironmentalWebApplication/RShinyApp
+ cd RShinyApp
 ```
 
 ## 2. Creating a New Branch
