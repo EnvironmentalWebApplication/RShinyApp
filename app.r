@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(ggh4x)
 
-#TODO Must Do: Add padding to right side of footer
+#TODO Mandatory: Redeploy app to team rshinyapps.io account
 #TODO Optional: switch heatmap to interpolated data, add new wq data,
 #TODO Meeting topics:
 
@@ -88,7 +88,17 @@ ui <- fluidPage(
              )
     ),
     selected = "High-Frequency Data"
-  )
+  ),
+
+  # Inject JS to disable keyboard for selectInput() function
+  tags$script(HTML("
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.selectize-input input').forEach(input => {
+        input.setAttribute('readonly', true);
+        input.setAttribute('inputmode', 'none');
+      });
+    });
+  ")),
 )
 
 #     "We thank the New York State Parks, Recreation and Historic Preservation Grant #T003655 for funding this work. We thank the following people for assisting with data collection: Lauri Ahrens, Jenna Robinson, Caitlin Williams, Charles Stetler, and Katelyn Stetler. We thank numerous State Park and Grafton Lakes employees for assisting with logistics during the sampling season. We thank Kevin Rose for lending equipment (Turner C6) and sharing lab space.",
