@@ -66,7 +66,7 @@ ui <- fluidPage(
                    "msTab",
                    "Select Graph",
                    choices = c("YSI", "Water Quality"),
-                   selected = "Water Quality"
+                   selected = "YSI"
                  ),
                  uiOutput("manualSamplingParameters")
                ),
