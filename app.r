@@ -6,7 +6,7 @@ library(tidyr)
 library(ggh4x)
 
 #TODO Mandatory: Redeploy app to team rshinyapps.io account
-#TODO Optional: switch heatmap to interpolated data, add new wq data,
+#TODO Optional: switch heatmap to interpolated data, add new wq data
 #TODO Meeting topics:
 
 # Load all data sets
